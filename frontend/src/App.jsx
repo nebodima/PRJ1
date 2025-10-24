@@ -1,4 +1,9 @@
 import { useState, useEffect } from 'react';
+import { AlertCircle, MessageCircle, Paperclip, CheckSquare, Edit2, X, Search, LogOut } from 'lucide-react';
+import Login from './Login';
+import Avatar from './components/Avatar';
+import EmptyState from './components/EmptyState';
+import SkeletonLoader from './components/SkeletonLoader';
 
 function App() {
   const formatDate = (dateString) => {
@@ -21,6 +26,7 @@ function App() {
     return `${day}.${month}`;
   };
 
+  const [currentUser, setCurrentUser] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -28,6 +34,7 @@ function App() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -45,9 +52,27 @@ function App() {
   });
 
   useEffect(() => {
-    fetchTasks();
-    fetchUsers();
+    // Проверяем сохраненную сессию
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        const user = JSON.parse(savedUser);
+        setCurrentUser(user);
+      } catch (err) {
+        console.error('Ошибка загрузки сессии:', err);
+        localStorage.removeItem('user');
+      }
+    } else {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchTasks();
+      fetchUsers();
+    }
+  }, [currentUser]);
 
   const fetchTasks = async () => {
     try {
@@ -76,6 +101,21 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    setFormData(prev => ({
+      ...prev,
+      created_by: user.id
+    }));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setCurrentUser(null);
+    setTasks([]);
+    setUsers([]);
   };
 
   const handleSubmit = async (e) => {
@@ -149,9 +189,37 @@ function App() {
     setShowModal(true);
   };
 
-  const filteredTasks = filterStatus === 'all'
-    ? tasks
-    : tasks.filter(t => t.status === filterStatus);
+  const openCreateModal = () => {
+    setFormData({
+      title: '',
+      description: '',
+      status: 'open',
+      priority: 'medium',
+      created_by: currentUser.id,
+      assigned_to: null,
+      date: new Date().toISOString().split('T')[0],
+      deadline: '',
+      urgent: false,
+      tags: [],
+      comments: [],
+      attachments: [],
+      subtasks: []
+    });
+    setShowModal(true);
+  };
+
+  // Фильтрация по статусу и поиску
+  const filteredTasks = tasks
+    .filter(t => filterStatus === 'all' || t.status === filterStatus)
+    .filter(t => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        t.title.toLowerCase().includes(query) ||
+        (t.description && t.description.toLowerCase().includes(query)) ||
+        (t.tags && t.tags.some(tag => tag.toLowerCase().includes(query)))
+      );
+    });
 
   const statusColors = {
     open: 'bg-[#5B7C99] text-white',
@@ -166,12 +234,19 @@ function App() {
     high: '#B86B5C'
   };
 
+  // Показываем Login если не авторизован
+  if (!currentUser) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1F1F1F] flex items-center justify-center">
-        <div className="text-[#B8B8B8] text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C48B64] mx-auto mb-4"></div>
-          <p>Загрузка...</p>
+      <div className="min-h-screen bg-[#1F1F1F]">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-[#2F2F2F] text-[#E8E8E8] px-4 py-3 border-b border-[#404040]">
+            <div className="h-6 w-32 bg-[#3A3A3A] rounded animate-pulse"></div>
+          </div>
+          <SkeletonLoader />
         </div>
       </div>
     );
@@ -181,13 +256,31 @@ function App() {
     <div className="min-h-screen bg-[#1F1F1F]">
       <div className="max-w-5xl mx-auto">
         <div className="bg-[#2F2F2F] text-[#E8E8E8] px-4 py-3 flex justify-between items-center sticky top-0 z-10 border-b border-[#404040] shadow-lg">
-          <h1 className="text-lg font-semibold tracking-tight">HelpDesk</h1>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-[#C48B64] hover:bg-[#D49A75] text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all hover:shadow-md"
-          >
-            + Задача
-          </button>
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-semibold tracking-tight">HelpDesk</h1>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-[#888888]">•</span>
+              <span className="text-[#B8B8B8]">{currentUser.name}</span>
+              {currentUser.role === 'admin' && (
+                <span className="bg-[#C48B64] text-white px-2 py-0.5 rounded text-xs font-medium">Admin</span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={openCreateModal}
+              className="bg-[#C48B64] hover:bg-[#D49A75] text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all hover:shadow-md"
+            >
+              + Задача
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-[#B8B8B8] hover:text-[#E8E8E8] px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-[#3A3A3A] flex items-center gap-2"
+              title="Выход"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -202,42 +295,66 @@ function App() {
           </div>
         )}
 
-        <div className="flex gap-2 p-3 bg-[#2F2F2F] border-b border-[#404040] overflow-x-auto">
-          {['all', 'open', 'in_progress', 'completed', 'closed'].map(status => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap font-medium transition-all ${
-                filterStatus === status
-                  ? 'bg-[#C48B64] text-white shadow-md'
-                  : 'bg-[#3A3A3A] text-[#B8B8B8] hover:bg-[#454545] hover:text-[#E8E8E8]'
-              }`}
-            >
-              {status === 'all' ? 'Все' :
-               status === 'open' ? 'Открыто' :
-               status === 'in_progress' ? 'В работе' :
-               status === 'completed' ? 'Завершено' : 'Закрыто'}
-            </button>
-          ))}
+        <div className="bg-[#2F2F2F] border-b border-[#404040] p-3 space-y-3">
+          <div className="flex gap-2 overflow-x-auto">
+            {['all', 'open', 'in_progress', 'completed', 'closed'].map(status => (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(status)}
+                className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap font-medium transition-all ${
+                  filterStatus === status
+                    ? 'bg-[#C48B64] text-white shadow-md'
+                    : 'bg-[#3A3A3A] text-[#B8B8B8] hover:bg-[#454545] hover:text-[#E8E8E8]'
+                }`}
+              >
+                {status === 'all' ? 'Все' :
+                 status === 'open' ? 'Открыто' :
+                 status === 'in_progress' ? 'В работе' :
+                 status === 'completed' ? 'Завершено' : 'Закрыто'}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#888888]" />
+            <input
+              type="text"
+              placeholder="Поиск по задачам..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg pl-10 pr-4 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#888888] hover:text-[#E8E8E8]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="divide-y divide-[#404040]">
-          {filteredTasks.map(task => (
-            <div
-              key={task.id}
-              className="bg-[#2F2F2F] p-4 hover:bg-[#353535] border-l-4 transition-colors"
-              style={{ borderLeftColor: priorityBorderColors[task.priority] }}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    {task.urgent && (
-                      <span className="text-red-400 text-xs animate-pulse font-semibold">⚠</span>
-                    )}
-                    <span className="text-xs text-[#888888]">#{task.id}</span>
-                    <h3 className="text-sm font-semibold text-[#E8E8E8] truncate">{task.title}</h3>
+        {filteredTasks.length === 0 ? (
+          <EmptyState onCreateTask={openCreateModal} />
+        ) : (
+          <div className="divide-y divide-[#404040]">
+            {filteredTasks.map(task => (
+              <div
+                key={task.id}
+                className="bg-[#2F2F2F] p-4 hover:bg-[#353535] border-l-4 transition-colors"
+                style={{ borderLeftColor: priorityBorderColors[task.priority] }}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      {task.urgent && (
+                        <AlertCircle className="w-4 h-4 text-red-400 animate-pulse" />
+                      )}
+                      <span className="text-xs text-[#888888]">#{task.id}</span>
+                      <h3 className="text-sm font-semibold text-[#E8E8E8] truncate">{task.title}</h3>
+                    </div>
                   </div>
-                </div>
                 <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ml-2 whitespace-nowrap shadow-sm ${statusColors[task.status]}`}>
                   {task.status === 'open' ? 'Открыто' :
                    task.status === 'in_progress' ? 'В работе' :
@@ -260,54 +377,70 @@ function App() {
               )}
 
               <div className="flex justify-between items-center text-xs text-[#888888]">
-                <div className="flex items-center gap-2 flex-1 truncate">
+                <div className="flex items-center gap-3 flex-1 truncate">
                   <span className="text-[#B8B8B8]">{formatDate(task.date)}</span>
                   {task.deadline && (
                     <>
                       <span className="text-[#666666]">→</span>
                       <span className={new Date(task.deadline) < new Date() ? 'text-red-400 font-semibold' : 'text-[#B8B8B8]'}>
-                        ⏱ {formatDate(task.deadline)}
+                        {formatDate(task.deadline)}
                       </span>
                     </>
                   )}
                   <span className="text-[#666666]">•</span>
-                  <span className="text-[#B8B8B8]">{task.created_by_name}</span>
+                  <div className="flex items-center gap-1.5">
+                    <Avatar name={task.created_by_name} size="sm" />
+                    <span className="text-[#B8B8B8]">{task.created_by_name}</span>
+                  </div>
                   {task.assigned_to_name && (
                     <>
                       <span className="text-[#666666]">→</span>
-                      <span className="text-[#B8B8B8]">{task.assigned_to_name}</span>
+                      <div className="flex items-center gap-1.5">
+                        <Avatar name={task.assigned_to_name} size="sm" />
+                        <span className="text-[#B8B8B8]">{task.assigned_to_name}</span>
+                      </div>
                     </>
                   )}
                 </div>
                 <div className="flex items-center gap-2 ml-2">
                   {task.comments && task.comments.length > 0 && (
-                    <span className="text-[#B8B8B8]">💬 {task.comments.length}</span>
+                    <div className="flex items-center gap-1 text-[#B8B8B8]">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>{task.comments.length}</span>
+                    </div>
                   )}
                   {task.attachments && task.attachments.length > 0 && (
-                    <span className="text-[#B8B8B8]">📎 {task.attachments.length}</span>
+                    <div className="flex items-center gap-1 text-[#B8B8B8]">
+                      <Paperclip className="w-3.5 h-3.5" />
+                      <span>{task.attachments.length}</span>
+                    </div>
                   )}
                   {task.subtasks && task.subtasks.length > 0 && (
-                    <span className="text-[#B8B8B8]">
-                      ☑ {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
-                    </span>
+                    <div className="flex items-center gap-1 text-[#B8B8B8]">
+                      <CheckSquare className="w-3.5 h-3.5" />
+                      <span>{task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}</span>
+                    </div>
                   )}
                   <button
                     onClick={() => openEditModal(task)}
-                    className="px-2.5 py-1 bg-[#3A3A3A] hover:bg-[#454545] text-[#E8E8E8] rounded-md text-xs transition-all hover:shadow-md"
+                    className="p-1.5 bg-[#3A3A3A] hover:bg-[#454545] text-[#E8E8E8] rounded-md transition-all hover:shadow-md"
+                    title="Редактировать"
                   >
-                    ✎
+                    <Edit2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(task.id)}
-                    className="px-2.5 py-1 bg-[#8B5A5A] hover:bg-[#9D6767] text-white rounded-md text-xs transition-all hover:shadow-md"
+                    className="p-1.5 bg-[#8B5A5A] hover:bg-[#9D6767] text-white rounded-md transition-all hover:shadow-md"
+                    title="Удалить"
                   >
-                    ×
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {showModal && (

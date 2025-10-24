@@ -7,11 +7,12 @@ const initDb = () => {
   if (!fs.existsSync(DB_FILE)) {
     const initialData = {
       users: [
-        { id: 1, name: 'Программист 1', email: 'dev1@example.com' },
-        { id: 2, name: 'Программист 2', email: 'dev2@example.com' },
-        { id: 3, name: 'Программист 3', email: 'dev3@example.com' },
-        { id: 4, name: 'Программист 4', email: 'dev4@example.com' },
-        { id: 5, name: 'Программист 5', email: 'dev5@example.com' }
+        { id: 1, name: 'Admin', email: 'admin@helpdesk.com', login: 'Admin', password: '19822503', role: 'admin' },
+        { id: 2, name: 'Николай', email: 'nikolay@example.com', login: 'Николай', password: '123', role: 'user' },
+        { id: 3, name: 'Алексей', email: 'alexey@example.com', login: 'Алексей', password: '123', role: 'user' },
+        { id: 4, name: 'Дмитрий', email: 'dmitry@example.com', login: 'Дмитрий', password: '123', role: 'user' },
+        { id: 5, name: 'Антон', email: 'anton@example.com', login: 'Антон', password: '123', role: 'user' },
+        { id: 6, name: 'Слава', email: 'slava@example.com', login: 'Слава', password: '123', role: 'user' }
       ],
       tasks: [],
       nextTaskId: 1
@@ -92,4 +93,25 @@ export const deleteTask = (id) => {
   const db = readDb();
   db.tasks = db.tasks.filter(t => t.id !== parseInt(id));
   writeDb(db);
+};
+
+export const authenticateUser = (login, password) => {
+  const db = readDb();
+  const user = db.users.find(u => u.login === login && u.password === password);
+  if (user) {
+    // Не возвращаем пароль клиенту
+    const { password: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+  return null;
+};
+
+export const getUserById = (id) => {
+  const db = readDb();
+  const user = db.users.find(u => u.id === parseInt(id));
+  if (user) {
+    const { password: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+  return null;
 };
