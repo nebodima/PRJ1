@@ -1,12 +1,27 @@
 import express from 'express';
 import cors from 'cors';
-import { getUsers, getTasks, createTask, updateTask, deleteTask } from './database.js';
+import { getUsers, getTasks, createTask, updateTask, deleteTask, authenticateUser, getUserById } from './database.js';
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+
+app.post('/api/login', (req, res) => {
+  try {
+    const { login, password } = req.body;
+    const user = authenticateUser(login, password);
+
+    if (user) {
+      res.json({ success: true, user });
+    } else {
+      res.status(401).json({ success: false, message: 'Неверный логин или пароль' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 app.get('/api/users', (req, res) => {
   try {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Login from './Login';
 
 function App() {
   const formatDate = (dateString) => {
@@ -21,6 +22,7 @@ function App() {
     return `${day}.${month}`;
   };
 
+  const [currentUser, setCurrentUser] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -45,9 +47,27 @@ function App() {
   });
 
   useEffect(() => {
-    fetchTasks();
-    fetchUsers();
+    // Проверяем сохраненную сессию
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        const user = JSON.parse(savedUser);
+        setCurrentUser(user);
+      } catch (err) {
+        console.error('Ошибка загрузки сессии:', err);
+        localStorage.removeItem('user');
+      }
+    } else {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchTasks();
+      fetchUsers();
+    }
+  }, [currentUser]);
 
   const fetchTasks = async () => {
     try {
@@ -76,6 +96,21 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    setFormData(prev => ({
+      ...prev,
+      created_by: user.id
+    }));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setCurrentUser(null);
+    setTasks([]);
+    setUsers([]);
   };
 
   const handleSubmit = async (e) => {
@@ -149,6 +184,25 @@ function App() {
     setShowModal(true);
   };
 
+  const openCreateModal = () => {
+    setFormData({
+      title: '',
+      description: '',
+      status: 'open',
+      priority: 'medium',
+      created_by: currentUser.id,
+      assigned_to: null,
+      date: new Date().toISOString().split('T')[0],
+      deadline: '',
+      urgent: false,
+      tags: [],
+      comments: [],
+      attachments: [],
+      subtasks: []
+    });
+    setShowModal(true);
+  };
+
   const filteredTasks = filterStatus === 'all'
     ? tasks
     : tasks.filter(t => t.status === filterStatus);
@@ -166,6 +220,11 @@ function App() {
     high: '#B86B5C'
   };
 
+  // Показываем Login если не авторизован
+  if (!currentUser) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#1F1F1F] flex items-center justify-center">
@@ -181,13 +240,30 @@ function App() {
     <div className="min-h-screen bg-[#1F1F1F]">
       <div className="max-w-5xl mx-auto">
         <div className="bg-[#2F2F2F] text-[#E8E8E8] px-4 py-3 flex justify-between items-center sticky top-0 z-10 border-b border-[#404040] shadow-lg">
-          <h1 className="text-lg font-semibold tracking-tight">HelpDesk</h1>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-[#C48B64] hover:bg-[#D49A75] text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all hover:shadow-md"
-          >
-            + Задача
-          </button>
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-semibold tracking-tight">HelpDesk</h1>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-[#888888]">•</span>
+              <span className="text-[#B8B8B8]">{currentUser.name}</span>
+              {currentUser.role === 'admin' && (
+                <span className="bg-[#C48B64] text-white px-2 py-0.5 rounded text-xs font-medium">Admin</span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={openCreateModal}
+              className="bg-[#C48B64] hover:bg-[#D49A75] text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all hover:shadow-md"
+            >
+              + Задача
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-[#B8B8B8] hover:text-[#E8E8E8] px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-[#3A3A3A]"
+            >
+              Выход
+            </button>
+          </div>
         </div>
 
         {error && (
