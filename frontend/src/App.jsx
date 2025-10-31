@@ -6,6 +6,8 @@ import EmptyState from './components/EmptyState';
 import SkeletonLoader from './components/SkeletonLoader';
 import FileUpload from './components/FileUpload';
 
+console.log('✓ HelpDesk v1.0.1 - File attachments enabled');
+
 function App() {
   const formatDate = (dateString) => {
     if (!dateString) return '';
