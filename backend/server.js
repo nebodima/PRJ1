@@ -179,4 +179,5 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`HelpDesk API запущен на http://localhost:${PORT}`);
+  console.log(`✓ File uploads enabled (max 10MB) at ${uploadsDir}`);
 });
