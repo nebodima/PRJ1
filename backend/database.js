@@ -143,3 +143,15 @@ export const getTaskById = (id) => {
   const db = readDb();
   return db.tasks.find(t => t.id === parseInt(id));
 };
+
+export const addComment = (taskId, comment) => {
+  const db = readDb();
+  const task = db.tasks.find(t => t.id === parseInt(taskId));
+  if (!task) return null;
+
+  if (!task.comments) task.comments = [];
+  task.comments.push(comment);
+  task.updated_at = new Date().toISOString();
+  writeDb(db);
+  return comment;
+};

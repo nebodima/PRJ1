@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import fs from 'fs';
-import { getUsers, getTasks, createTask, updateTask, deleteTask, authenticateUser, getUserById, addAttachment, deleteAttachment, getTaskById } from './database.js';
+import { getUsers, getTasks, createTask, updateTask, deleteTask, authenticateUser, getUserById, addAttachment, deleteAttachment, getTaskById, addComment } from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -98,6 +98,25 @@ app.put('/api/tasks/:id', (req, res) => {
 
 app.delete('/api/tasks/:id', (req, res) => {
   try {
+    // Получаем задачу перед удалением для доступа к файлам
+    const task = getTaskById(req.params.id);
+
+    if (task && task.attachments && task.attachments.length > 0) {
+      // Удаляем все физические файлы задачи
+      task.attachments.forEach(attachment => {
+        const filePath = path.join(uploadsDir, attachment.filename);
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+            console.log(`✓ Deleted file: ${attachment.filename}`);
+          } catch (err) {
+            console.error(`✗ Error deleting file ${attachment.filename}:`, err);
+          }
+        }
+      });
+    }
+
+    // Удаляем задачу из базы данных
     deleteTask(req.params.id);
     res.status(204).send();
   } catch (error) {
@@ -167,6 +186,38 @@ app.get('/api/uploads/:filename', (req, res) => {
       return res.status(404).json({ error: 'Файл не найден' });
     }
     res.download(filePath);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Добавление комментария к задаче
+app.post('/api/tasks/:id/comments', (req, res) => {
+  try {
+    const { text, userId } = req.body;
+    if (!text || !userId) {
+      return res.status(400).json({ error: 'Отсутствуют обязательные поля' });
+    }
+
+    const user = getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    const comment = {
+      id: Date.now().toString(),
+      text,
+      userId,
+      userName: user.name,
+      createdAt: new Date().toISOString()
+    };
+
+    const result = addComment(req.params.id, comment);
+    if (!result) {
+      return res.status(404).json({ error: 'Задача не найдена' });
+    }
+
+    res.status(201).json(comment);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

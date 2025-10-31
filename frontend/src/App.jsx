@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle, MessageCircle, Paperclip, CheckSquare, Edit2, X, Search, LogOut } from 'lucide-react';
+import { AlertCircle, MessageCircle, Paperclip, CheckSquare, Edit2, X, Search, LogOut, Download } from 'lucide-react';
 import Login from './Login';
 import Avatar from './components/Avatar';
 import EmptyState from './components/EmptyState';
@@ -38,6 +38,14 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [localFiles, setLocalFiles] = useState([]);
+  const [isFormModified, setIsFormModified] = useState(false);
+  const [viewMode, setViewMode] = useState('list'); // 'list' или 'kanban'
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [filesPopover, setFilesPopover] = useState(null); // taskId для показа popover файлов
+  const [commentsPopover, setCommentsPopover] = useState(null); // taskId для показа popover комментариев
+  const [commentText, setCommentText] = useState('');
+  const [previewImage, setPreviewImage] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -106,6 +114,11 @@ function App() {
     }
   };
 
+  const updateFormData = (updates) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+    setIsFormModified(true);
+  };
+
   const handleLogin = (user) => {
     setCurrentUser(user);
     setFormData(prev => ({
@@ -135,8 +148,29 @@ function App() {
 
       if (!res.ok) throw new Error('Ошибка при сохранении задачи');
 
+      const savedTask = await res.json();
+
+      // Если создали новую задачу и есть локальные файлы - загружаем их
+      if (method === 'POST' && localFiles.length > 0) {
+        for (const localFile of localFiles) {
+          const fileFormData = new FormData();
+          fileFormData.append('file', localFile.file);
+
+          try {
+            await fetch(`/api/tasks/${savedTask.id}/attachments`, {
+              method: 'POST',
+              body: fileFormData
+            });
+          } catch (error) {
+            console.error('Ошибка загрузки файла:', error);
+          }
+        }
+      }
+
       setShowModal(false);
       setEditingTask(null);
+      setLocalFiles([]);
+      setIsFormModified(false);
       setFormData({
         title: '',
         description: '',
@@ -174,6 +208,9 @@ function App() {
 
   const openEditModal = (task) => {
     setEditingTask(task);
+    setLocalFiles([]);
+    setIsFormModified(false);
+    setCommentText('');
     setFormData({
       title: task.title,
       description: task.description || '',
@@ -193,6 +230,10 @@ function App() {
   };
 
   const openCreateModal = () => {
+    setEditingTask(null);
+    setLocalFiles([]);
+    setIsFormModified(false);
+    setCommentText('');
     setFormData({
       title: '',
       description: '',
@@ -211,9 +252,151 @@ function App() {
     setShowModal(true);
   };
 
+  const closeModal = () => {
+    if (isFormModified || localFiles.length > 0) {
+      if (!confirm('Вы уверены что хотите закрыть форму? Все несохраненные изменения будут потеряны.')) {
+        return;
+      }
+    }
+    setShowModal(false);
+    setEditingTask(null);
+    setLocalFiles([]);
+    setIsFormModified(false);
+    setCommentText('');
+    setFormData({
+      title: '',
+      description: '',
+      status: 'open',
+      priority: 'medium',
+      created_by: currentUser.id,
+      assigned_to: null,
+      date: new Date().toISOString().split('T')[0],
+      deadline: '',
+      urgent: false,
+      tags: [],
+      comments: [],
+      attachments: [],
+      subtasks: []
+    });
+  };
+
+  // Обработка ESC для закрытия модалки
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showModal) {
+        closeModal();
+      }
+    };
+
+    if (showModal) {
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showModal, isFormModified, localFiles]);
+
+  const handleDragStart = (e, task) => {
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e, newStatus) => {
+    e.preventDefault();
+    if (!draggedTask || draggedTask.status === newStatus) {
+      setDraggedTask(null);
+      return;
+    }
+
+    try {
+      await fetch(`/api/tasks/${draggedTask.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...draggedTask, status: newStatus })
+      });
+      await fetchTasks();
+    } catch (err) {
+      setError('Ошибка при изменении статуса задачи');
+      console.error('Drag error:', err);
+    } finally {
+      setDraggedTask(null);
+    }
+  };
+
+  const isImage = (filename) => {
+    const ext = filename.toLowerCase().split('.').pop();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Только что';
+    if (minutes < 60) return `${minutes} мин. назад`;
+    if (hours < 24) return `${hours} ч. назад`;
+    if (days < 7) return `${days} дн. назад`;
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    return `${day}.${month} в ${time}`;
+  };
+
+  const handleAddComment = async (taskId) => {
+    if (!commentText.trim()) return;
+
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          text: commentText.trim(),
+          userId: currentUser.id
+        })
+      });
+
+      if (!res.ok) throw new Error('Ошибка при добавлении комментария');
+
+      const newComment = await res.json();
+      
+      // Обновляем formData если модалка открыта
+      if (editingTask?.id === taskId) {
+        setFormData(prev => ({
+          ...prev,
+          comments: [...(prev.comments || []), newComment]
+        }));
+      }
+
+      setCommentText('');
+      await fetchTasks();
+    } catch (err) {
+      setError(err.message);
+      console.error('Comment error:', err);
+    }
+  };
+
   // Фильтрация по статусу и поиску
   const filteredTasks = tasks
-    .filter(t => filterStatus === 'all' || t.status === filterStatus)
+    .filter(t => viewMode === 'kanban' || filterStatus === 'all' || t.status === filterStatus)
     .filter(t => {
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
@@ -227,8 +410,7 @@ function App() {
   const statusColors = {
     open: 'bg-[#5B7C99] text-white',
     in_progress: 'bg-[#C48B64] text-white',
-    completed: 'bg-[#6B8E6F] text-white',
-    closed: 'bg-[#606060] text-white'
+    completed: 'bg-[#6B8E6F] text-white'
   };
 
   const priorityBorderColors = {
@@ -270,6 +452,28 @@ function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <div className="flex bg-[#3A3A3A] rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-[#C48B64] text-white'
+                    : 'text-[#B8B8B8] hover:text-[#E8E8E8]'
+                }`}
+              >
+                Список
+              </button>
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                  viewMode === 'kanban'
+                    ? 'bg-[#C48B64] text-white'
+                    : 'text-[#B8B8B8] hover:text-[#E8E8E8]'
+                }`}
+              >
+                Канбан
+              </button>
+            </div>
             <button
               onClick={openCreateModal}
               className="bg-[#C48B64] hover:bg-[#D49A75] text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all hover:shadow-md"
@@ -299,8 +503,9 @@ function App() {
         )}
 
         <div className="bg-[#2F2F2F] border-b border-[#404040] p-3 space-y-3">
+          {viewMode === 'list' && (
           <div className="flex gap-2 overflow-x-auto">
-            {['all', 'open', 'in_progress', 'completed', 'closed'].map(status => (
+              {['all', 'open', 'in_progress', 'completed'].map(status => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
@@ -312,11 +517,11 @@ function App() {
               >
                 {status === 'all' ? 'Все' :
                  status === 'open' ? 'Открыто' :
-                 status === 'in_progress' ? 'В работе' :
-                 status === 'completed' ? 'Завершено' : 'Закрыто'}
+                   status === 'in_progress' ? 'В работе' : 'Завершено'}
               </button>
             ))}
           </div>
+          )}
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#888888]" />
@@ -340,13 +545,165 @@ function App() {
 
         {filteredTasks.length === 0 ? (
           <EmptyState onCreateTask={openCreateModal} />
+        ) : viewMode === 'kanban' ? (
+          // Канбан-доска
+          <div className="p-4 overflow-x-auto">
+            <div className="flex gap-4 min-w-max">
+              {['open', 'in_progress', 'completed'].map(status => {
+                const statusTasks = filteredTasks.filter(t => t.status === status);
+                const statusTitle = status === 'open' ? 'Открыто' :
+                                   status === 'in_progress' ? 'В работе' : 'Завершено';
+                const statusColor = statusColors[status];
+                
+                return (
+                  <div key={status} className="flex-shrink-0 w-80">
+                    <div className="bg-[#2F2F2F] rounded-lg border border-[#404040]">
+                      <div className={`px-3 py-2 ${statusColor} rounded-t-lg flex justify-between items-center`}>
+                        <h3 className="font-semibold text-sm">{statusTitle}</h3>
+                        <span className="bg-black bg-opacity-20 px-2 py-0.5 rounded text-xs">{statusTasks.length}</span>
+                      </div>
+                      <div 
+                        className="p-2 space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto min-h-[200px]"
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, status)}
+                      >
+                        {statusTasks.map(task => (
+                          <div
+                            key={task.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, task)}
+                            className={`bg-[#1F1F1F] p-3 rounded-lg border-l-4 hover:bg-[#252525] transition-colors cursor-move ${
+                              draggedTask?.id === task.id ? 'opacity-50' : ''
+                            }`}
+                            style={{ borderLeftColor: priorityBorderColors[task.priority] }}
+                            onDoubleClick={() => openEditModal(task)}
+                          >
+                            {/* Заголовок с приоритетом и срочностью */}
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs text-[#666666]">#{task.id}</span>
+                                  {task.urgent && (
+                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-red-900 bg-opacity-30 rounded">
+                                      <AlertCircle className="w-3 h-3 text-red-400 animate-pulse" />
+                                      <span className="text-[10px] text-red-400 font-medium">Срочно</span>
+                                    </div>
+                                  )}
+                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                    task.priority === 'high' ? 'bg-[#B86B5C] bg-opacity-30 text-[#B86B5C]' :
+                                    task.priority === 'low' ? 'bg-[#6B8E6F] bg-opacity-30 text-[#6B8E6F]' :
+                                    'bg-[#C48B64] bg-opacity-30 text-[#C48B64]'
+                                  }`}>
+                                    {task.priority === 'high' ? 'Высокий' : task.priority === 'low' ? 'Низкий' : 'Средний'}
+                                  </span>
+                                </div>
+                                <h4 className="text-sm font-semibold text-[#E8E8E8] leading-tight">{task.title}</h4>
+                              </div>
+                            </div>
+                            
+                            {/* Описание */}
+                            {task.description && (
+                              <p className="text-xs text-[#B8B8B8] line-clamp-2 mb-2 leading-relaxed">{task.description}</p>
+                            )}
+                            
+                            {/* Теги */}
+                            {task.tags && task.tags.length > 0 && (
+                              <div className="flex gap-1 mb-2 flex-wrap">
+                                {task.tags.map((tag, idx) => (
+                                  <span key={idx} className="px-2 py-0.5 bg-[#3A3A3A] text-[#B8B8B8] rounded text-[10px]">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Футер с инфо */}
+                            <div className="space-y-2 pt-2 border-t border-[#404040]">
+                              {/* Даты */}
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className="text-[#B8B8B8]">{formatDate(task.date)}</span>
+                                {task.deadline && (
+                                  <>
+                                    <span className="text-[#666]">→</span>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[#666]">⏰</span>
+                                      <span className={new Date(task.deadline) < new Date() ? 'text-red-400 font-semibold' : 'text-[#B8B8B8]'}>
+                                        {formatDate(task.deadline)}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                              
+                              {/* Участники */}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 text-xs overflow-hidden">
+                                  <div className="flex items-center gap-1" title={`Создал: ${task.created_by_name}`}>
+                                    <Avatar name={task.created_by_name} size="sm" />
+                                  </div>
+                                  {task.assigned_to_name && (
+                                    <>
+                                      <span className="text-[#666]">→</span>
+                                      <div className="flex items-center gap-1" title={`Исполнитель: ${task.assigned_to_name}`}>
+                                        <Avatar name={task.assigned_to_name} size="sm" />
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                                
+                                {/* Счетчики */}
+                                <div className="flex items-center gap-2 text-xs text-[#888] flex-shrink-0">
+                                  {task.subtasks && task.subtasks.length > 0 && (
+                                    <div className="flex items-center gap-0.5" title="Подзадачи">
+                                      <CheckSquare className="w-3 h-3" />
+                                      <span>{task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}</span>
+                                    </div>
+                                  )}
+                                  <div 
+                                    className={`flex items-center gap-0.5 cursor-pointer hover:text-[#C48B64] transition-colors ${task.comments && task.comments.length > 0 ? '' : 'opacity-50'}`}
+                                    title="Комментарии"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setCommentsPopover(commentsPopover === task.id ? null : task.id);
+                                    }}
+                                  >
+                                    <MessageCircle className="w-3 h-3" />
+                                    <span>{task.comments ? task.comments.length : 0}</span>
+                                  </div>
+                                  {task.attachments && task.attachments.length > 0 && (
+                                    <div 
+                                      className="flex items-center gap-0.5 cursor-pointer hover:text-[#C48B64] transition-colors relative" 
+                                      title="Файлы"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setFilesPopover(filesPopover === task.id ? null : task.id);
+                                      }}
+                                    >
+                                      <Paperclip className="w-3 h-3" />
+                                      <span>{task.attachments.length}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         ) : (
+          // Список задач
           <div className="divide-y divide-[#404040]">
             {filteredTasks.map(task => (
               <div
                 key={task.id}
-                className="bg-[#2F2F2F] p-4 hover:bg-[#353535] border-l-4 transition-colors"
+                className="bg-[#2F2F2F] p-4 hover:bg-[#353535] border-l-4 transition-colors cursor-pointer"
                 style={{ borderLeftColor: priorityBorderColors[task.priority] }}
+                onDoubleClick={() => openEditModal(task)}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1 min-w-0">
@@ -360,8 +717,7 @@ function App() {
                   </div>
                 <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ml-2 whitespace-nowrap shadow-sm ${statusColors[task.status]}`}>
                   {task.status === 'open' ? 'Открыто' :
-                   task.status === 'in_progress' ? 'В работе' :
-                   task.status === 'completed' ? 'Завершено' : 'Закрыто'}
+                   task.status === 'in_progress' ? 'В работе' : 'Завершено'}
                 </span>
               </div>
 
@@ -406,14 +762,24 @@ function App() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 ml-2">
-                  {task.comments && task.comments.length > 0 && (
-                    <div className="flex items-center gap-1 text-[#B8B8B8]">
+                  <div 
+                    className={`flex items-center gap-1 text-[#B8B8B8] cursor-pointer hover:text-[#C48B64] transition-colors ${task.comments && task.comments.length > 0 ? '' : 'opacity-50'}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCommentsPopover(commentsPopover === task.id ? null : task.id);
+                    }}
+                  >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      <span>{task.comments.length}</span>
+                    <span>{task.comments ? task.comments.length : 0}</span>
                     </div>
-                  )}
                   {task.attachments && task.attachments.length > 0 && (
-                    <div className="flex items-center gap-1 text-[#B8B8B8]">
+                    <div 
+                      className="flex items-center gap-1 text-[#B8B8B8] cursor-pointer hover:text-[#C48B64] transition-colors relative"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilesPopover(filesPopover === task.id ? null : task.id);
+                      }}
+                    >
                       <Paperclip className="w-3.5 h-3.5" />
                       <span>{task.attachments.length}</span>
                     </div>
@@ -446,102 +812,306 @@ function App() {
         )}
       </div>
 
+      {/* Files Popover */}
+      {filesPopover && (() => {
+        const task = tasks.find(t => t.id === filesPopover);
+        if (!task || !task.attachments || task.attachments.length === 0) return null;
+        
+        return (
+          <>
+            <div 
+              className="fixed inset-0 z-40"
+              onClick={() => setFilesPopover(null)}
+            />
+            <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center p-4">
+              <div 
+                className="bg-[#2F2F2F] rounded-lg border border-[#404040] shadow-2xl w-full max-w-md pointer-events-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="bg-[#3A3A3A] px-4 py-2 rounded-t-lg border-b border-[#404040] flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-[#E8E8E8]">Файлы задачи #{task.id}</h3>
+                  <button
+                    onClick={() => setFilesPopover(null)}
+                    className="text-[#B8B8B8] hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="p-3 max-h-96 overflow-y-auto space-y-2">
+                  {task.attachments.map((file) => {
+                    const isImg = isImage(file.originalName);
+                    return (
+                      <div
+                        key={file.id}
+                        className="flex items-center gap-3 p-2 bg-[#1F1F1F] rounded-lg hover:bg-[#252525] transition-colors"
+                      >
+                        {isImg ? (
+                          <div 
+                            className="w-12 h-12 flex-shrink-0 rounded overflow-hidden bg-[#2F2F2F] cursor-pointer"
+                            onClick={() => {
+                              setPreviewImage({
+                                url: `/api/uploads/${file.filename}`,
+                                name: file.originalName
+                              });
+                            }}
+                          >
+                            <img 
+                              src={`/api/uploads/${file.filename}`}
+                              alt={file.originalName}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 flex-shrink-0 rounded bg-[#3A3A3A] flex items-center justify-center">
+                            <Paperclip className="w-5 h-5 text-[#C48B64]" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p 
+                            className={`text-sm text-[#E8E8E8] truncate ${isImg ? 'hover:underline cursor-pointer' : ''}`}
+                            onClick={() => {
+                              if (isImg) {
+                                setPreviewImage({
+                                  url: `/api/uploads/${file.filename}`,
+                                  name: file.originalName
+                                });
+                              }
+                            }}
+                          >
+                            {file.originalName}
+                          </p>
+                          <p className="text-xs text-[#888]">{formatFileSize(file.size)}</p>
+                        </div>
+                        <a
+                          href={`/api/uploads/${file.filename}`}
+                          download={file.originalName}
+                          className="p-2 hover:bg-[#404040] rounded transition-colors"
+                          title="Скачать"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Download className="w-4 h-4 text-[#C48B64]" />
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
+      {/* Comments Popover */}
+      {commentsPopover && (() => {
+        const task = tasks.find(t => t.id === commentsPopover);
+        if (!task) return null;
+        
+        return (
+          <>
+            <div 
+              className="fixed inset-0 z-40"
+              onClick={() => {
+                setCommentsPopover(null);
+                setCommentText('');
+              }}
+            />
+            <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center p-4">
+              <div 
+                className="bg-[#2F2F2F] rounded-lg border border-[#404040] shadow-2xl w-full max-w-md pointer-events-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="bg-[#3A3A3A] px-4 py-2 rounded-t-lg border-b border-[#404040] flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-[#E8E8E8]">Комментарии к задаче #{task.id}</h3>
+                  <button
+                    onClick={() => {
+                      setCommentsPopover(null);
+                      setCommentText('');
+                    }}
+                    className="text-[#B8B8B8] hover:text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                {/* Список комментариев */}
+                <div className="p-3 max-h-80 overflow-y-auto space-y-3">
+                  {task.comments && task.comments.length > 0 ? (
+                    task.comments.map((comment) => (
+                      <div
+                        key={comment.id}
+                        className="bg-[#1F1F1F] p-3 rounded-lg"
+                      >
+                        <div className="flex items-start gap-2 mb-2">
+                          <Avatar name={comment.userName} size="sm" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm font-medium text-[#E8E8E8]">{comment.userName}</span>
+                              <span className="text-xs text-[#666]">{formatDateTime(comment.createdAt)}</span>
+                            </div>
+                            <p className="text-sm text-[#B8B8B8] whitespace-pre-wrap break-words">{comment.text}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-[#888]">
+                      <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">Комментариев пока нет</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Форма добавления комментария */}
+                <div className="p-3 border-t border-[#404040]">
+                  <div className="flex gap-2">
+                    <Avatar name={currentUser.name} size="sm" />
+                    <div className="flex-1">
+                      <textarea
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Написать комментарий..."
+                        className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                        rows="2"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                            handleAddComment(task.id);
+                          }
+                        }}
+                      />
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-[#666]">Ctrl+Enter для отправки</span>
+                        <button
+                          onClick={() => handleAddComment(task.id)}
+                          disabled={!commentText.trim()}
+                          className="px-3 py-1.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Отправить
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-5xl max-h-[90vh] w-full h-full flex flex-col">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-white text-sm font-medium truncate">{previewImage.name}</h3>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="text-white hover:text-[#C48B64] transition-colors flex-shrink-0"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <img
+                src={previewImage.url}
+                alt={previewImage.name}
+                className="max-w-full max-h-full object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-[#2F2F2F] rounded-xl w-full max-w-md max-h-[95vh] overflow-y-auto border border-[#404040] shadow-2xl">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 backdrop-blur-sm z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeModal();
+            }
+          }}
+        >
+          <div className="bg-[#2F2F2F] rounded-xl w-full max-w-4xl max-h-[95vh] overflow-y-auto border border-[#404040] shadow-2xl">
             <div className="bg-[#3A3A3A] text-[#E8E8E8] px-4 py-3 rounded-t-xl flex justify-between items-center sticky top-0 border-b border-[#404040]">
               <h2 className="text-sm font-semibold">
                 {editingTask ? 'Редактировать задачу' : 'Новая задача'}
               </h2>
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  setEditingTask(null);
-                  setFormData({
-                    title: '',
-                    description: '',
-                    status: 'open',
-                    priority: 'medium',
-                    created_by: 1,
-                    assigned_to: null,
-                    date: new Date().toISOString().split('T')[0],
-                    deadline: '',
-                    urgent: false,
-                    tags: [],
-                    comments: [],
-                    attachments: [],
-                    subtasks: []
-                  });
-                }}
+                onClick={closeModal}
                 className="text-[#B8B8B8] hover:text-white text-xl leading-none transition-colors"
               >
                 ×
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4">
-              <div className="mb-3">
+            <form onSubmit={handleSubmit} className="p-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Левая колонка - основные данные */}
+                <div className="space-y-2">
+              <div>
                 <input
                   type="text"
                   required
                   value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
+                  onChange={e => updateFormData({ title: e.target.value })}
                   placeholder="Название задачи *"
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
                 />
               </div>
 
-              <div className="mb-3">
+              <div>
                 <textarea
                   value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
+                  onChange={e => updateFormData({ description: e.target.value })}
                   placeholder="Описание"
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
-                  rows="3"
+                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                  rows="2"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-2 gap-2">
                 <input
                   type="date"
                   value={formData.date}
-                  onChange={e => setFormData({...formData, date: e.target.value})}
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                  onChange={e => updateFormData({ date: e.target.value })}
+                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
                 />
                 <input
                   type="date"
                   value={formData.deadline}
-                  onChange={e => setFormData({...formData, deadline: e.target.value})}
+                  onChange={e => updateFormData({ deadline: e.target.value })}
                   placeholder="Дедлайн"
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
                 />
               </div>
 
-              <div className="mb-3">
+              <div>
                 <input
                   type="text"
                   value={formData.tags.join(', ')}
-                  onChange={e => setFormData({...formData, tags: e.target.value.split(',').map(t => t.trim()).filter(t => t)})}
+                  onChange={e => updateFormData({ tags: e.target.value.split(',').map(t => t.trim()).filter(t => t) })}
                   placeholder="Теги через запятую"
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="grid grid-cols-3 gap-2">
                 <select
                   value={formData.status}
-                  onChange={e => setFormData({...formData, status: e.target.value})}
+                  onChange={e => updateFormData({ status: e.target.value })}
                   className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2 py-2 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
                 >
                   <option value="open">Открыто</option>
                   <option value="in_progress">В работе</option>
                   <option value="completed">Завершено</option>
-                  <option value="closed">Закрыто</option>
                 </select>
 
                 <select
                   value={formData.priority}
-                  onChange={e => setFormData({...formData, priority: e.target.value})}
+                  onChange={e => updateFormData({ priority: e.target.value })}
                   className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2 py-2 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
                 >
                   <option value="low">Низкий</option>
@@ -549,22 +1119,23 @@ function App() {
                   <option value="high">Высокий</option>
                 </select>
 
-                <label className="flex items-center justify-center gap-1 bg-[#1F1F1F] border border-[#505050] rounded-lg px-2 py-2 text-xs text-[#B8B8B8] cursor-pointer hover:border-[#606060] transition-all">
+                <label className="flex items-center justify-center gap-1.5 text-xs text-[#B8B8B8] cursor-pointer hover:text-[#E8E8E8] transition-all">
                   <input
                     type="checkbox"
                     checked={formData.urgent}
-                    onChange={e => setFormData({...formData, urgent: e.target.checked})}
-                    className="w-3.5 h-3.5"
+                    onChange={e => updateFormData({ urgent: e.target.checked })}
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  <span>⚠</span>
+                  <span className="text-base">⚠️</span>
+                  <span>Срочно</span>
                 </label>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="grid grid-cols-2 gap-2">
                 <select
                   value={formData.created_by}
-                  onChange={e => setFormData({...formData, created_by: parseInt(e.target.value)})}
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                  onChange={e => updateFormData({ created_by: parseInt(e.target.value) })}
+                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
                 >
                   {users.map(user => (
                     <option key={user.id} value={user.id}>{user.name}</option>
@@ -573,8 +1144,8 @@ function App() {
 
                 <select
                   value={formData.assigned_to || ''}
-                  onChange={e => setFormData({...formData, assigned_to: e.target.value ? parseInt(e.target.value) : null})}
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                  onChange={e => updateFormData({ assigned_to: e.target.value ? parseInt(e.target.value) : null })}
+                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
                 >
                   <option value="">Не назначено</option>
                   {users.map(user => (
@@ -582,49 +1153,105 @@ function App() {
                   ))}
                 </select>
               </div>
+                </div>
 
+                {/* Правая колонка - файлы и комментарии */}
+                <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-medium text-[#B8B8B8] mb-1">
+                  Файлы
+                </label>
+                <FileUpload
+                  taskId={editingTask?.id}
+                  attachments={formData.attachments}
+                  onUpdate={async () => {
+                    await fetchTasks();
+                    // Обновляем formData с актуальными файлами после удаления
+                    if (editingTask?.id) {
+                      const updatedTasks = await fetch('/api/tasks').then(r => r.json());
+                      const updatedTask = updatedTasks.find(t => t.id === editingTask.id);
+                      if (updatedTask) {
+                        setFormData(prev => ({
+                          ...prev,
+                          attachments: updatedTask.attachments || []
+                        }));
+                      }
+                    }
+                  }}
+                  localFiles={localFiles}
+                  onLocalFilesChange={setLocalFiles}
+                />
+              </div>
+
+              {/* Комментарии - только для существующих задач */}
               {editingTask && (
-                <div className="mb-4">
-                  <label className="block text-xs font-medium text-[#B8B8B8] mb-2">
-                    Прикрепленные файлы
+                <div>
+                  <label className="block text-[10px] font-medium text-[#B8B8B8] mb-1">
+                    Комментарии ({formData.comments ? formData.comments.length : 0})
                   </label>
-                  <FileUpload
-                    taskId={editingTask.id}
-                    attachments={formData.attachments}
-                    onUpdate={loadTasks}
-                  />
+                  
+                  {/* Список комментариев */}
+                  {formData.comments && formData.comments.length > 0 && (
+                    <div className="space-y-2 max-h-48 overflow-y-auto bg-[#1F1F1F] border border-[#505050] rounded-lg p-2">
+                      {formData.comments.map((comment) => (
+                        <div key={comment.id} className="bg-[#2F2F2F] p-2 rounded">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Avatar name={comment.userName} size="sm" />
+                            <span className="text-xs font-medium text-[#E8E8E8]">{comment.userName}</span>
+                            <span className="text-[10px] text-[#666]">{formatDateTime(comment.createdAt)}</span>
+                          </div>
+                          <p className="text-xs text-[#B8B8B8] whitespace-pre-wrap break-words ml-6">{comment.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Форма добавления */}
+                  <div className="flex gap-2">
+                    <Avatar name={currentUser.name} size="sm" />
+                    <div className="flex-1">
+                      <textarea
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Написать комментарий..."
+                        className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                        rows="2"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                            e.preventDefault();
+                            handleAddComment(editingTask.id);
+                          }
+                        }}
+                      />
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-[9px] text-[#666]">Ctrl+Enter</span>
+                        <button
+                          type="button"
+                          onClick={() => handleAddComment(editingTask.id)}
+                          disabled={!commentText.trim()}
+                          className="px-2 py-1 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded text-[10px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Добавить
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
+                </div>
+              </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-3 mt-3 border-t border-[#404040] sticky bottom-0 bg-[#2F2F2F] -mx-3 px-3 pb-3 rounded-b-xl">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingTask(null);
-                    setFormData({
-                      title: '',
-                      description: '',
-                      status: 'open',
-                      priority: 'medium',
-                      created_by: 1,
-                      assigned_to: null,
-                      date: new Date().toISOString().split('T')[0],
-                      deadline: '',
-                      urgent: false,
-                      tags: [],
-                      comments: [],
-                      attachments: [],
-                      subtasks: []
-                    });
-                  }}
-                  className="flex-1 px-4 py-2 border border-[#505050] rounded-lg text-sm text-[#B8B8B8] hover:bg-[#3A3A3A] hover:text-[#E8E8E8] transition-all"
+                  onClick={closeModal}
+                  className="flex-1 px-3 py-1.5 border border-[#505050] rounded-lg text-sm text-[#B8B8B8] hover:bg-[#3A3A3A] hover:text-[#E8E8E8] transition-all"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg text-sm font-medium transition-all hover:shadow-lg"
+                  className="flex-1 px-3 py-1.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg text-sm font-medium transition-all hover:shadow-lg"
                 >
                   {editingTask ? 'Сохранить' : 'Создать'}
                 </button>
