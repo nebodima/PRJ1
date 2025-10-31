@@ -5,8 +5,11 @@ import Avatar from './components/Avatar';
 import EmptyState from './components/EmptyState';
 import SkeletonLoader from './components/SkeletonLoader';
 import FileUpload from './components/FileUpload';
+import InstallPWA from './components/InstallPWA';
+import OnlineStatus from './components/OnlineStatus';
+import PushNotifications from './components/PushNotifications';
 
-console.log('✓ HelpDesk v1.0.1 - File attachments enabled');
+console.log('✓ HelpDesk v1.0.1 - PWA with push notifications enabled');
 
 function App() {
   const formatDate = (dateString) => {
@@ -84,6 +87,29 @@ function App() {
       fetchUsers();
     }
   }, [currentUser]);
+
+  // Обработка сообщений от Service Worker (клик по уведомлению)
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const handleMessage = (event) => {
+        if (event.data.type === 'NOTIFICATION_CLICK') {
+          const data = event.data.data;
+          if (data.taskId && tasks.length > 0) {
+            const task = tasks.find(t => t.id === parseInt(data.taskId));
+            if (task) {
+              openEditModal(task);
+            }
+          }
+        }
+      };
+      
+      navigator.serviceWorker.addEventListener('message', handleMessage);
+      
+      return () => {
+        navigator.serviceWorker.removeEventListener('message', handleMessage);
+      };
+    }
+  }, [tasks]);
 
   const fetchTasks = async () => {
     try {
@@ -439,6 +465,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#1F1F1F]">
+      <OnlineStatus />
+      <InstallPWA />
       <div className="max-w-5xl mx-auto">
         <div className="bg-[#2F2F2F] text-[#E8E8E8] px-4 py-3 flex justify-between items-center sticky top-0 z-10 border-b border-[#404040] shadow-lg">
           <div className="flex items-center gap-4">
@@ -452,6 +480,7 @@ function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <PushNotifications />
             <div className="flex bg-[#3A3A3A] rounded-lg p-0.5">
               <button
                 onClick={() => setViewMode('list')}
@@ -791,14 +820,20 @@ function App() {
                     </div>
                   )}
                   <button
-                    onClick={() => openEditModal(task)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(task);
+                    }}
                     className="p-1.5 bg-[#3A3A3A] hover:bg-[#454545] text-[#E8E8E8] rounded-md transition-all hover:shadow-md"
                     title="Редактировать"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(task.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(task.id);
+                    }}
                     className="p-1.5 bg-[#8B5A5A] hover:bg-[#9D6767] text-white rounded-md transition-all hover:shadow-md"
                     title="Удалить"
                   >

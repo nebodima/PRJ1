@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="#1F1F1F"/>
+  
+  <!-- Icon Design -->
+  <rect x="128" y="128" width="256" height="256" rx="40" fill="#C48B64"/>
+  
+  <!-- Checkmark -->
+  <path d="M200 280 L240 320 L320 200" stroke="white" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  
+  <!-- Tasks Lines -->
+  <line x1="160" y1="180" x2="240" y2="180" stroke="white" stroke-width="16" stroke-linecap="round"/>
+  <line x1="160" y1="220" x2="220" y2="220" stroke="white" stroke-width="16" stroke-linecap="round"/>
+  
+  <!-- Notification Badge -->
+  <circle cx="360" cy="160" r="40" fill="#B86B5C"/>
+  <text x="360" y="175" font-size="48" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial, sans-serif">!</text>
+</svg>
+

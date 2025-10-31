@@ -51,3 +51,80 @@ button, input, select, textarea {
 ::-webkit-scrollbar-thumb:hover {
   background: #505050;
 }
+
+/* PWA Animations */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Mobile Safe Area */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Улучшенная работа на touch устройствах */
+@media (hover: none) and (pointer: coarse) {
+  /* Увеличиваем кнопки на touch устройствах */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Убираем hover эффекты */
+  button:hover {
+    transform: none;
+  }
+}
+
+/* Standalone режим PWA */
+@media (display-mode: standalone) {
+  body {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  
+  /* Добавляем padding для notch на iPhone */
+  .sticky {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Улучшения для iOS */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select {
+    font-size: 16px; /* Предотвращает зум при фокусе на iOS */
+  }
+}
+
+/* Pull-to-refresh prevention */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Ориентация для мобильных */
+@media screen and (max-width: 768px) {
+  /* Скрываем горизонтальный скролл */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Улучшаем readability на маленьких экранах */
+  * {
+    -webkit-text-size-adjust: 100%;
+  }
+}

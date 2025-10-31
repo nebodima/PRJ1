@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import multer from 'multer';
 import fs from 'fs';
 import { getUsers, getTasks, createTask, updateTask, deleteTask, authenticateUser, getUserById, addAttachment, deleteAttachment, getTaskById, addComment } from './database.js';
+import { addSubscription, removeSubscription, sendNotificationToAll } from './push-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,11 +75,26 @@ app.get('/api/tasks', (req, res) => {
   }
 });
 
-app.post('/api/tasks', (req, res) => {
+app.post('/api/tasks', async (req, res) => {
   try {
     const taskId = createTask(req.body);
     const tasks = getTasks();
     const newTask = tasks.find(t => t.id === taskId);
+    
+    // Отправляем push-уведомление
+    try {
+      await sendNotificationToAll({
+        title: '📋 Новая задача',
+        body: `${newTask.title}`,
+        icon: '/icon-192x192.png',
+        badge: '/icon-72x72.png',
+        tag: `task-${taskId}`,
+        data: { taskId, type: 'new_task' }
+      });
+    } catch (pushError) {
+      console.error('Push notification failed:', pushError);
+    }
+    
     res.status(201).json(newTask);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -191,8 +207,56 @@ app.get('/api/uploads/:filename', (req, res) => {
   }
 });
 
+// Push-уведомления: подписка
+app.post('/api/push/subscribe', (req, res) => {
+  try {
+    const subscription = req.body;
+    const added = addSubscription(subscription);
+    
+    if (added) {
+      console.log('✓ New push subscription added');
+      res.status(201).json({ success: true, message: 'Подписка добавлена' });
+    } else {
+      res.status(200).json({ success: true, message: 'Подписка уже существует' });
+    }
+  } catch (error) {
+    console.error('Subscribe error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Push-уведомления: отписка
+app.post('/api/push/unsubscribe', (req, res) => {
+  try {
+    const subscription = req.body;
+    removeSubscription(subscription);
+    console.log('✓ Push subscription removed');
+    res.json({ success: true, message: 'Подписка удалена' });
+  } catch (error) {
+    console.error('Unsubscribe error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Push-уведомления: тестовая отправка
+app.post('/api/push/test', async (req, res) => {
+  try {
+    const result = await sendNotificationToAll({
+      title: 'Тестовое уведомление',
+      body: 'Push-уведомления работают! 🎉',
+      icon: '/icon-192x192.png',
+      badge: '/icon-72x72.png'
+    });
+    
+    res.json({ success: true, result });
+  } catch (error) {
+    console.error('Test push error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Добавление комментария к задаче
-app.post('/api/tasks/:id/comments', (req, res) => {
+app.post('/api/tasks/:id/comments', async (req, res) => {
   try {
     const { text, userId } = req.body;
     if (!text || !userId) {
@@ -217,6 +281,21 @@ app.post('/api/tasks/:id/comments', (req, res) => {
       return res.status(404).json({ error: 'Задача не найдена' });
     }
 
+    // Отправляем push-уведомление
+    try {
+      const task = getTaskById(req.params.id);
+      await sendNotificationToAll({
+        title: '💬 Новый комментарий',
+        body: `${user.name}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+        icon: '/icon-192x192.png',
+        badge: '/icon-72x72.png',
+        tag: `comment-${req.params.id}`,
+        data: { taskId: req.params.id, commentId: comment.id, type: 'new_comment' }
+      });
+    } catch (pushError) {
+      console.error('Push notification failed:', pushError);
+    }
+
     res.status(201).json(comment);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -231,4 +310,5 @@ app.get('*', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`HelpDesk API запущен на http://localhost:${PORT}`);
   console.log(`✓ File uploads enabled (max 10MB) at ${uploadsDir}`);
+  console.log(`✓ Push notifications enabled`);
 });
