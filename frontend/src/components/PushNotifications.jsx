@@ -51,6 +51,15 @@ function PushNotifications() {
 
   const subscribeToPush = async () => {
     try {
+      // Проверяем iOS в standalone режиме
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+      
+      if (isIOS && !isInStandaloneMode) {
+        alert('На iOS сначала установите приложение на главный экран через кнопку "Поделиться" → "На экран Домой"');
+        return;
+      }
+
       const permission = await Notification.requestPermission();
       setPermission(permission);
 

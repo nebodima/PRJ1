@@ -6,6 +6,7 @@ import EmptyState from './components/EmptyState';
 import SkeletonLoader from './components/SkeletonLoader';
 import FileUpload from './components/FileUpload';
 import InstallPWA from './components/InstallPWA';
+import InstallPWAiOS from './components/InstallPWAiOS';
 import OnlineStatus from './components/OnlineStatus';
 import PushNotifications from './components/PushNotifications';
 
@@ -467,6 +468,7 @@ function App() {
     <div className="min-h-screen bg-[#1F1F1F]">
       <OnlineStatus />
       <InstallPWA />
+      <InstallPWAiOS />
       <div className="max-w-5xl mx-auto">
         <div className="bg-[#2F2F2F] text-[#E8E8E8] px-4 py-3 flex justify-between items-center sticky top-0 z-10 border-b border-[#404040] shadow-lg">
           <div className="flex items-center gap-4">
