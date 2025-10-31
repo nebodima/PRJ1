@@ -4,6 +4,7 @@ import Login from './Login';
 import Avatar from './components/Avatar';
 import EmptyState from './components/EmptyState';
 import SkeletonLoader from './components/SkeletonLoader';
+import FileUpload from './components/FileUpload';
 
 function App() {
   const formatDate = (dateString) => {
@@ -579,6 +580,19 @@ function App() {
                   ))}
                 </select>
               </div>
+
+              {editingTask && (
+                <div className="mb-4">
+                  <label className="block text-xs font-medium text-[#B8B8B8] mb-2">
+                    Прикрепленные файлы
+                  </label>
+                  <FileUpload
+                    taskId={editingTask.id}
+                    attachments={formData.attachments}
+                    onUpdate={loadTasks}
+                  />
+                </div>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <button
