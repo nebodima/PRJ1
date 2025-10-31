@@ -115,3 +115,31 @@ export const getUserById = (id) => {
   }
   return null;
 };
+
+export const addAttachment = (taskId, attachment) => {
+  const db = readDb();
+  const task = db.tasks.find(t => t.id === parseInt(taskId));
+  if (!task) return null;
+
+  if (!task.attachments) task.attachments = [];
+  task.attachments.push(attachment);
+  task.updated_at = new Date().toISOString();
+  writeDb(db);
+  return attachment;
+};
+
+export const deleteAttachment = (taskId, attachmentId) => {
+  const db = readDb();
+  const task = db.tasks.find(t => t.id === parseInt(taskId));
+  if (!task) return null;
+
+  task.attachments = task.attachments.filter(a => a.id !== attachmentId);
+  task.updated_at = new Date().toISOString();
+  writeDb(db);
+  return true;
+};
+
+export const getTaskById = (id) => {
+  const db = readDb();
+  return db.tasks.find(t => t.id === parseInt(id));
+};

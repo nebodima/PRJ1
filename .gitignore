@@ -3,3 +3,4 @@ dist/
 database.json
 *.log
 .DS_Store
+backend/uploads/
