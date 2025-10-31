@@ -1,8 +1,6 @@
 // Service Worker для PWA
-const CACHE_NAME = 'helpdesk-v1.0.1';
+const CACHE_NAME = 'helpdesk-v1.0.2';
 const urlsToCache = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/icon-192x192.png',
   '/icon-512x512.png'
@@ -38,41 +36,56 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Обработка запросов
+// Обработка запросов - Network First для HTML, Cache First для остального
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Возвращаем кешированный ответ если есть
-        if (response) {
-          return response;
-        }
+  const { request } = event;
+  const url = new URL(request.url);
 
-        // Клонируем запрос
-        const fetchRequest = event.request.clone();
+  // Игнорируем chrome-extension и другие протоколы
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
 
-        return fetch(fetchRequest).then((response) => {
-          // Проверяем валидность ответа
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
+  // Игнорируем API запросы - всегда идём в сеть
+  if (url.pathname.startsWith('/api/')) {
+    return;
+  }
 
-          // Клонируем ответ для кеша
+  // Для HTML - всегда сеть, кеш как fallback
+  if (request.headers.get('accept').includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
           const responseToCache = response.clone();
-
-          // Кешируем только GET запросы
-          if (event.request.method === 'GET') {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseToCache);
+          });
           return response;
-        }).catch(() => {
-          // Возвращаем офлайн страницу если есть
-          return caches.match('/index.html');
-        });
-      })
+        })
+        .catch(() => {
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Для остального - кеш, потом сеть
+  event.respondWith(
+    caches.match(request).then((response) => {
+      if (response) {
+        return response;
+      }
+
+      return fetch(request).then((response) => {
+        if (response && response.status === 200 && request.method === 'GET') {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseToCache);
+          });
+        }
+        return response;
+      });
+    })
   );
 });
 

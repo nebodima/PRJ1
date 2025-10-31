@@ -470,18 +470,18 @@ function App() {
       <InstallPWA />
       <InstallPWAiOS />
       <div className="max-w-5xl mx-auto">
-        <div className="bg-[#2F2F2F] text-[#E8E8E8] px-4 py-3 flex justify-between items-center sticky top-0 z-10 border-b border-[#404040] shadow-lg">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold tracking-tight">HelpDesk</h1>
-            <div className="flex items-center gap-2 text-sm">
+        <div className="bg-[#2F2F2F] text-[#E8E8E8] px-3 sm:px-4 py-3 flex justify-between items-center sticky top-0 z-10 border-b border-[#404040] shadow-lg">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <h1 className="text-base sm:text-lg font-semibold tracking-tight">HelpDesk</h1>
+            <div className="hidden sm:flex items-center gap-2 text-sm">
               <span className="text-[#888888]">•</span>
-              <span className="text-[#B8B8B8]">{currentUser.name}</span>
+              <span className="text-[#B8B8B8] truncate">{currentUser.name}</span>
               {currentUser.role === 'admin' && (
                 <span className="bg-[#C48B64] text-white px-2 py-0.5 rounded text-xs font-medium">Admin</span>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <PushNotifications />
             <div className="flex bg-[#3A3A3A] rounded-lg p-0.5">
               <button
@@ -507,9 +507,10 @@ function App() {
             </div>
             <button
               onClick={openCreateModal}
-              className="bg-[#C48B64] hover:bg-[#D49A75] text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all hover:shadow-md"
+              className="bg-[#C48B64] hover:bg-[#D49A75] text-white px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all hover:shadow-md whitespace-nowrap"
             >
-              + Задача
+              <span className="hidden sm:inline">+ Задача</span>
+              <span className="sm:hidden">+</span>
             </button>
             <button
               onClick={handleLogout}
@@ -533,14 +534,14 @@ function App() {
           </div>
         )}
 
-        <div className="bg-[#2F2F2F] border-b border-[#404040] p-3 space-y-3">
+        <div className="bg-[#2F2F2F] border-b border-[#404040] p-2 sm:p-3 space-y-2 sm:space-y-3">
           {viewMode === 'list' && (
-          <div className="flex gap-2 overflow-x-auto">
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {['all', 'open', 'in_progress', 'completed'].map(status => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
-                className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap font-medium transition-all ${
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs whitespace-nowrap font-medium transition-all ${
                   filterStatus === status
                     ? 'bg-[#C48B64] text-white shadow-md'
                     : 'bg-[#3A3A3A] text-[#B8B8B8] hover:bg-[#454545] hover:text-[#E8E8E8]'

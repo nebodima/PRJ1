@@ -147,3 +147,26 @@ body {
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* Скрываем scrollbar но оставляем прокрутку */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Мобильные улучшения */
+@media (max-width: 640px) {
+  /* Убираем лишние отступы */
+  body {
+    padding: 0;
+  }
+  
+  /* Оптимизация текста для мобильных */
+  input, textarea, select {
+    font-size: 16px !important; /* Предотвращает зум на iOS */
+  }
+}
