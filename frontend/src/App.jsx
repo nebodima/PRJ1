@@ -1174,7 +1174,7 @@ function App() {
             }
           }}
         >
-          <div className="bg-[#2F2F2F] rounded-xl w-full max-w-md md:max-w-4xl max-h-[95vh] overflow-y-auto overflow-x-hidden border border-[#404040] shadow-2xl touch-pan-y">
+          <div className="bg-[#2F2F2F] rounded-xl w-full h-full md:h-[95vh] overflow-y-auto overflow-x-hidden border border-[#404040] shadow-2xl touch-pan-y">
             <div className="bg-[#3A3A3A] text-[#E8E8E8] px-4 py-3 rounded-t-xl flex justify-between items-center sticky top-0 border-b border-[#404040] z-10">
               <h2 className="text-sm font-semibold">
                 {editingTask ? `Задача #${editingTask.id}` : 'Новая задача'}
@@ -1199,10 +1199,10 @@ function App() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-3 overflow-x-hidden">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Левая колонка - основные данные */}
-                <div className="space-y-2 min-w-0">
+            <form onSubmit={handleSubmit} className="p-4 overflow-x-hidden">
+              <div className="space-y-4">
+                {/* Основные данные */}
+                <div className="space-y-3 min-w-0">
               <div>
                 {!editingTask || isEditMode ? (
                   <input
@@ -1382,8 +1382,8 @@ function App() {
               )}
                 </div>
 
-                {/* Правая колонка - файлы и комментарии */}
-                <div className="space-y-3 min-w-0">
+                {/* Файлы и комментарии */}
+                <div className="space-y-4 min-w-0">
               <div>
                 <button
                   type="button"
@@ -1479,7 +1479,6 @@ function App() {
                 </div>
               )}
                 </div>
-              </div>
 
               {isEditMode && (
               <div className="flex gap-3 pt-3 mt-3 border-t border-[#404040] sticky bottom-0 bg-[#2F2F2F] -mx-3 px-3 pb-3 rounded-b-xl z-10">
