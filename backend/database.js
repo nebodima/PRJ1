@@ -15,6 +15,13 @@ let db = null;
 const initDb = async () => {
   const SQL = await initSqlJs();
   
+  // Создаем директорию /data если её нет (для Railway)
+  const dbDir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+    console.log(`✓ Created directory: ${dbDir}`);
+  }
+  
   // Загружаем существующую БД или создаем новую
   if (fs.existsSync(DB_PATH)) {
     const buffer = fs.readFileSync(DB_PATH);
