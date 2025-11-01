@@ -1186,15 +1186,15 @@ function App() {
       )}
 
       {showModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 backdrop-blur-sm z-50"
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center sm:p-4 backdrop-blur-sm z-50"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               closeModal();
             }
           }}
         >
-          <div className="bg-[#2F2F2F] rounded-xl w-full max-w-3xl h-[95vh] flex flex-col border border-[#404040] shadow-2xl">
+          <div className="bg-[#2F2F2F] sm:rounded-xl w-full sm:max-w-3xl h-full sm:h-[95vh] flex flex-col border border-[#404040] shadow-2xl">
             <div className="bg-[#3A3A3A] text-[#E8E8E8] px-4 py-3 rounded-t-xl flex justify-between items-center sticky top-0 border-b border-[#404040] z-10">
               <h2 className="text-sm font-semibold">
                 {editingTask ? `Задача #${editingTask.id}` : 'Новая задача'}
@@ -1255,14 +1255,14 @@ function App() {
                   type="date"
                   value={formData.date}
                   onChange={e => updateFormData({ date: e.target.value })}
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
                 />
                 <input
                   type="date"
                   value={formData.deadline}
                   onChange={e => updateFormData({ deadline: e.target.value })}
                   placeholder="Дедлайн"
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
                 />
               </div>
 
@@ -1462,8 +1462,8 @@ function App() {
               )}
               </div>
 
-              {/* Форма добавления комментария - sticky внизу */}
-              {editingTask && showComments && (
+              {/* Форма добавления комментария - всегда прикреплена внизу */}
+              {editingTask && (
                 <div className="border-t border-[#404040] bg-[#2F2F2F] p-4">
                   <div className="flex gap-2 items-end">
                     <textarea
