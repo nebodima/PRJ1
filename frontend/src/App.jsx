@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { AlertCircle, MessageCircle, Paperclip, CheckSquare, Edit2, X, Search, LogOut, Download, Send } from 'lucide-react';
 import Login from './Login';
 import Avatar from './components/Avatar';
@@ -541,7 +541,7 @@ function App() {
   }, [formData.comments]);
 
   // Фильтрация по статусу и поиску
-  const filteredTasks = tasks
+  const filteredTasks = useMemo(() => tasks
     .filter(t => viewMode === 'kanban' || filterStatus === 'all' || t.status === filterStatus)
     .filter(t => {
       if (!searchQuery) return true;
@@ -551,7 +551,7 @@ function App() {
         (t.description && t.description.toLowerCase().includes(query)) ||
         (t.tags && t.tags.some(tag => tag.toLowerCase().includes(query)))
       );
-    });
+    }), [tasks, viewMode, filterStatus, searchQuery]);
 
   const statusColors = {
     open: 'bg-[#5B7C99] text-white',
@@ -589,7 +589,7 @@ function App() {
       <InstallPWA />
       <InstallPWAiOS />
       <div className="max-w-5xl mx-auto">
-        <div className="bg-[#2F2F2F] text-[#E8E8E8] px-3 sm:px-4 py-3 flex justify-between items-center sticky top-0 z-10 border-b border-[#404040] shadow-lg">
+        <div className="bg-[#2F2F2F] text-[#E8E8E8] px-3 sm:px-4 py-4 flex justify-between items-center sticky top-0 z-10 border-b border-[#404040] shadow-lg">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <h1 className="text-base sm:text-lg font-semibold tracking-tight">HelpDesk</h1>
             <div className="hidden sm:flex items-center gap-2 text-sm">
@@ -1207,7 +1207,26 @@ function App() {
                 {editingTask ? `Задача #${editingTask.id}` : 'Новая задача'}
               </h2>
               <div className="flex items-center gap-2">
-                {isEditMode && (
+                {editingTask && !isEditMode ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditMode(true)}
+                      className="px-3 py-1.5 border border-[#505050] rounded-lg text-xs text-[#B8B8B8] hover:bg-[#3A3A3A] hover:text-[#E8E8E8] transition-all"
+                      title="Редактировать"
+                    >
+                      <Edit2 className="w-3 h-3 inline mr-1" />
+                      Редактировать
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="px-3 py-1.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg text-xs font-medium transition-all hover:shadow-lg"
+                    >
+                      Закрыть
+                    </button>
+                  </>
+                ) : (
                   <>
                     <button
                       type="button"
@@ -1225,22 +1244,6 @@ function App() {
                     </button>
                   </>
                 )}
-                {editingTask && !isEditMode && (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditMode(true)}
-                    className="p-1.5 hover:bg-[#454545] rounded transition-colors"
-                    title="Редактировать"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                )}
-                <button
-                  onClick={closeModal}
-                  className="text-[#B8B8B8] hover:text-white text-xl leading-none transition-colors"
-                >
-                  ×
-                </button>
               </div>
             </div>
 
@@ -1280,18 +1283,14 @@ function App() {
                       type="date"
                       value={formData.date}
                       onChange={e => updateFormData({ date: e.target.value })}
-                      onClick={e => e.target.showPicker?.()}
-                      readOnly
-                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
                     />
                     <input
                       type="date"
                       value={formData.deadline}
                       onChange={e => updateFormData({ deadline: e.target.value })}
-                      onClick={e => e.target.showPicker?.()}
-                      readOnly
                       placeholder="Дедлайн"
-                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
                     />
                   </div>
 
