@@ -214,13 +214,13 @@ app.get('/api/uploads/:filename', (req, res) => {
 });
 
 // Push-уведомления: подписка
-app.post('/api/push/subscribe', (req, res) => {
+app.post('/api/push/subscribe', async (req, res) => {
   try {
     const subscription = req.body;
-    const added = addSubscription(subscription);
+    const added = await addSubscription(subscription);
     
     if (added) {
-      console.log('✓ New push subscription added');
+      console.log('✓ New push subscription added to database');
       res.status(201).json({ success: true, message: 'Подписка добавлена' });
     } else {
       res.status(200).json({ success: true, message: 'Подписка уже существует' });
@@ -232,11 +232,11 @@ app.post('/api/push/subscribe', (req, res) => {
 });
 
 // Push-уведомления: отписка
-app.post('/api/push/unsubscribe', (req, res) => {
+app.post('/api/push/unsubscribe', async (req, res) => {
   try {
     const subscription = req.body;
-    removeSubscription(subscription);
-    console.log('✓ Push subscription removed');
+    await removeSubscription(subscription);
+    console.log('✓ Push subscription removed from database');
     res.json({ success: true, message: 'Подписка удалена' });
   } catch (error) {
     console.error('Unsubscribe error:', error);

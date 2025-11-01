@@ -1,12 +1,5 @@
 import webpush from 'web-push';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const SUBSCRIPTIONS_FILE = path.join(__dirname, 'subscriptions.json');
+import { getPushSubscriptions, addPushSubscription, removePushSubscription } from './database.js';
 
 // VAPID ключи для production
 const vapidKeys = {
@@ -21,56 +14,22 @@ webpush.setVapidDetails(
   vapidKeys.privateKey
 );
 
-// Инициализация файла подписок
-const initSubscriptions = () => {
-  if (!fs.existsSync(SUBSCRIPTIONS_FILE)) {
-    fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify({ subscriptions: [] }, null, 2));
-  }
-};
-
-// Чтение подписок
-const getSubscriptions = () => {
-  initSubscriptions();
-  const data = fs.readFileSync(SUBSCRIPTIONS_FILE, 'utf8');
-  return JSON.parse(data).subscriptions;
-};
-
-// Сохранение подписок
-const saveSubscriptions = (subscriptions) => {
-  fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify({ subscriptions }, null, 2));
-};
-
 // Добавить подписку
-export const addSubscription = (subscription) => {
-  const subscriptions = getSubscriptions();
-  
-  // Проверяем, нет ли уже такой подписки
-  const exists = subscriptions.find(s => s.endpoint === subscription.endpoint);
-  if (exists) {
-    return false;
-  }
-  
-  subscriptions.push({
-    ...subscription,
-    addedAt: new Date().toISOString()
-  });
-  
-  saveSubscriptions(subscriptions);
-  return true;
+export const addSubscription = async (subscription) => {
+  return await addPushSubscription(subscription);
 };
 
 // Удалить подписку
-export const removeSubscription = (subscription) => {
-  let subscriptions = getSubscriptions();
-  subscriptions = subscriptions.filter(s => s.endpoint !== subscription.endpoint);
-  saveSubscriptions(subscriptions);
-  return true;
+export const removeSubscription = async (subscription) => {
+  return await removePushSubscription(subscription.endpoint);
 };
 
 // Отправить уведомление всем подписчикам
 export const sendNotificationToAll = async (notification) => {
-  const subscriptions = getSubscriptions();
+  const subscriptions = await getPushSubscriptions();
   const payload = JSON.stringify(notification);
+  
+  console.log(`📤 Отправка уведомления ${subscriptions.length} подписчикам`);
   
   const results = await Promise.allSettled(
     subscriptions.map(async (subscription) => {
@@ -82,7 +41,7 @@ export const sendNotificationToAll = async (notification) => {
         
         // Если подписка невалидна (410 Gone), удаляем её
         if (error.statusCode === 410) {
-          removeSubscription(subscription);
+          await removeSubscription(subscription);
         }
         
         return { success: false, endpoint: subscription.endpoint, error: error.message };
@@ -92,6 +51,8 @@ export const sendNotificationToAll = async (notification) => {
   
   const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
   const failed = results.length - successful;
+  
+  console.log(`✓ Отправлено: ${successful}, ошибок: ${failed}`);
   
   return { total: results.length, successful, failed };
 };

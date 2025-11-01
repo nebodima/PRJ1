@@ -84,6 +84,15 @@ const initPostgres = async () => {
       )
     `);
     
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id SERIAL PRIMARY KEY,
+        endpoint TEXT UNIQUE NOT NULL,
+        keys JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    
     // Проверяем есть ли пользователи
     const { rows } = await pool.query('SELECT COUNT(*) as count FROM users');
     
@@ -431,6 +440,40 @@ export const addComment = async (taskId, comment) => {
     saveSqliteDb();
     return { ...comment, id: commentId.toString() };
   }
+};
+
+// ==================== PUSH ПОДПИСКИ ====================
+
+export const getPushSubscriptions = async () => {
+  if (USE_POSTGRES) {
+    const { rows } = await pool.query('SELECT endpoint, keys FROM push_subscriptions');
+    return rows.map(r => ({ endpoint: r.endpoint, keys: r.keys }));
+  }
+  return [];
+};
+
+export const addPushSubscription = async (subscription) => {
+  if (USE_POSTGRES) {
+    try {
+      await pool.query(
+        'INSERT INTO push_subscriptions (endpoint, keys) VALUES ($1, $2) ON CONFLICT (endpoint) DO NOTHING',
+        [subscription.endpoint, subscription.keys]
+      );
+      return true;
+    } catch (err) {
+      console.error('Error adding subscription:', err);
+      return false;
+    }
+  }
+  return false;
+};
+
+export const removePushSubscription = async (endpoint) => {
+  if (USE_POSTGRES) {
+    await pool.query('DELETE FROM push_subscriptions WHERE endpoint = $1', [endpoint]);
+    return true;
+  }
+  return false;
 };
 
 // Инициализируем БД при загрузке модуля
