@@ -14,14 +14,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Создаем папку для uploads если её нет
-// Для Railway Volume используем /data, для локальной разработки - текущую папку
-const uploadsDir = process.env.RAILWAY_ENVIRONMENT 
-  ? '/data/uploads' 
+// Если /data существует (Railway Volume) - используем его, иначе локальную папку
+const uploadsDir = fs.existsSync('/data')
+  ? '/data/uploads'
   : path.join(__dirname, 'uploads');
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+console.log(`✓ Uploads directory: ${uploadsDir}`);
 
 // Настройка Multer
 const storage = multer.diskStorage({

@@ -4,23 +4,24 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Для Railway Volume используем /data, для локальной разработки - текущую папку
-const DB_PATH = process.env.RAILWAY_ENVIRONMENT 
-  ? '/data/helpdesk.db' 
-  : path.join(__dirname, 'helpdesk.db');
+
+// Определяем путь к БД
+// Если /data существует (Railway Volume смонтирован) - используем его
+// Иначе - локальная папка
+let DB_PATH;
+if (fs.existsSync('/data')) {
+  DB_PATH = '/data/helpdesk.db';
+  console.log('✓ Using Railway Volume: /data/helpdesk.db');
+} else {
+  DB_PATH = path.join(__dirname, 'helpdesk.db');
+  console.log('⚠ Volume not found, using local: backend/helpdesk.db');
+}
 
 let db = null;
 
 // Инициализация БД
 const initDb = async () => {
   const SQL = await initSqlJs();
-  
-  // Создаем директорию /data если её нет (для Railway)
-  const dbDir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-    console.log(`✓ Created directory: ${dbDir}`);
-  }
   
   // Загружаем существующую БД или создаем новую
   if (fs.existsSync(DB_PATH)) {
