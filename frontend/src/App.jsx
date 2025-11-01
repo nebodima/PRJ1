@@ -1195,7 +1195,7 @@ function App() {
           }}
         >
           <div className="bg-[#2F2F2F] sm:rounded-xl w-full sm:max-w-3xl h-full sm:h-[95vh] flex flex-col border border-[#404040] shadow-2xl">
-            <div className="bg-[#3A3A3A] text-[#E8E8E8] px-4 py-3 rounded-t-xl flex justify-between items-center sticky top-0 border-b border-[#404040] z-10">
+            <div className="bg-[#3A3A3A] text-[#E8E8E8] px-4 py-3 sm:rounded-t-xl flex justify-between items-center sticky top-0 border-b border-[#404040] z-10">
               <h2 className="text-sm font-semibold">
                 {editingTask ? `Задача #${editingTask.id}` : 'Новая задача'}
               </h2>
@@ -1248,91 +1248,91 @@ function App() {
                     <p className="text-sm text-[#B8B8B8]">{formData.description}</p>
                   ) : null}
 
-              {isEditMode ? (
-                <>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={e => updateFormData({ date: e.target.value })}
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
-                />
-                <input
-                  type="date"
-                  value={formData.deadline}
-                  onChange={e => updateFormData({ deadline: e.target.value })}
-                  placeholder="Дедлайн"
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
-                />
-              </div>
+                {isEditMode ? (
+                  <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={e => updateFormData({ date: e.target.value })}
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
+                    />
+                    <input
+                      type="date"
+                      value={formData.deadline}
+                      onChange={e => updateFormData({ deadline: e.target.value })}
+                      placeholder="Дедлайн"
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
+                    />
+                  </div>
 
-              <div>
-                <input
-                  type="text"
-                  value={formData.tags.join(', ')}
-                  onChange={e => updateFormData({ tags: e.target.value.split(',').map(t => t.trim()).filter(t => t) })}
-                  placeholder="Теги через запятую"
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
-                />
-              </div>
+                  <div>
+                    <input
+                      type="text"
+                      value={formData.tags.join(', ')}
+                      onChange={e => updateFormData({ tags: e.target.value.split(',').map(t => t.trim()).filter(t => t) })}
+                      placeholder="Теги через запятую"
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                <select
-                  value={formData.status}
-                  onChange={e => updateFormData({ status: e.target.value })}
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2 py-2 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
-                >
-                  <option value="open">Открыто</option>
-                  <option value="in_progress">В работе</option>
-                  <option value="completed">Завершено</option>
-                </select>
+                  <div className="grid grid-cols-3 gap-2">
+                    <select
+                      value={formData.status}
+                      onChange={e => updateFormData({ status: e.target.value })}
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2 py-2 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                    >
+                      <option value="open">Открыто</option>
+                      <option value="in_progress">В работе</option>
+                      <option value="completed">Завершено</option>
+                    </select>
 
-                <select
-                  value={formData.priority}
-                  onChange={e => updateFormData({ priority: e.target.value })}
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2 py-2 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
-                >
-                  <option value="low">Низкий</option>
-                  <option value="medium">Средний</option>
-                  <option value="high">Высокий</option>
-                </select>
+                    <select
+                      value={formData.priority}
+                      onChange={e => updateFormData({ priority: e.target.value })}
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2 py-2 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                    >
+                      <option value="low">Низкий</option>
+                      <option value="medium">Средний</option>
+                      <option value="high">Высокий</option>
+                    </select>
 
-                <label className="flex items-center justify-center gap-1.5 text-xs text-[#B8B8B8] cursor-pointer hover:text-[#E8E8E8] transition-all">
-                  <input
-                    type="checkbox"
-                    checked={formData.urgent}
-                    onChange={e => updateFormData({ urgent: e.target.checked })}
-                    className="w-4 h-4 cursor-pointer"
-                  />
-                  <span className="text-base">⚠️</span>
-                  <span>Срочно</span>
-                </label>
-              </div>
+                    <label className="flex items-center justify-center gap-1.5 text-xs text-[#B8B8B8] cursor-pointer hover:text-[#E8E8E8] transition-all">
+                      <input
+                        type="checkbox"
+                        checked={formData.urgent}
+                        onChange={e => updateFormData({ urgent: e.target.checked })}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-base">⚠️</span>
+                      <span>Срочно</span>
+                    </label>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <select
-                  value={formData.created_by}
-                  onChange={e => updateFormData({ created_by: parseInt(e.target.value) })}
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
-                >
-                  {users.map(user => (
-                    <option key={user.id} value={user.id}>{user.name}</option>
-                  ))}
-                </select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={formData.created_by}
+                      onChange={e => updateFormData({ created_by: parseInt(e.target.value) })}
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                    >
+                      {users.map(user => (
+                        <option key={user.id} value={user.id}>{user.name}</option>
+                      ))}
+                    </select>
 
-                <select
-                  value={formData.assigned_to || ''}
-                  onChange={e => updateFormData({ assigned_to: e.target.value ? parseInt(e.target.value) : null })}
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
-                >
-                  <option value="">Не назначено</option>
-                  {users.map(user => (
-                    <option key={user.id} value={user.id}>{user.name}</option>
-                  ))}
-                </select>
-              </div>
-                </>
-              ) : (
+                    <select
+                      value={formData.assigned_to || ''}
+                      onChange={e => updateFormData({ assigned_to: e.target.value ? parseInt(e.target.value) : null })}
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                    >
+                      <option value="">Не назначено</option>
+                      {users.map(user => (
+                        <option key={user.id} value={user.id}>{user.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  </>
+                ) : (
                 <div className="space-y-3">
                   {/* Статусы и мета-данные компактно */}
                   <div className="flex flex-wrap gap-2">
@@ -1432,32 +1432,66 @@ function App() {
                 )}
               </div>
 
-              {/* Комментарии список - только для существующих задач */}
+              {/* Комментарии - только для существующих задач */}
               {editingTask && (
                 <div>
                   <button
                     type="button"
                     onClick={() => setShowComments(!showComments)}
-                    className="w-full flex items-center justify-between text-sm font-medium text-[#E8E8E8] mb-2 hover:text-[#C48B64] transition-colors"
+                    className="w-full flex items-center justify-between text-[10px] font-medium text-[#B8B8B8] mb-1 hover:text-[#E8E8E8] transition-colors"
                   >
-                    <span>💬 Комментарии ({formData.comments ? formData.comments.length : 0})</span>
-                    <X className={`w-4 h-4 transition-transform ${showComments ? 'rotate-0' : 'rotate-45'}`} />
+                    <span>Комментарии ({formData.comments ? formData.comments.length : 0})</span>
+                    <X className={`w-3 h-3 transition-transform ${showComments ? 'rotate-0' : 'rotate-45'}`} />
                   </button>
-                  
-                  {/* Список комментариев */}
-                  {showComments && formData.comments && formData.comments.length > 0 && (
-                    <div className="space-y-2 bg-[#1F1F1F] border border-[#505050] rounded-lg p-2">
-                      {formData.comments.map((comment) => (
-                        <div key={comment.id} className="bg-[#2F2F2F] p-2 rounded">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Avatar name={comment.userName} size="sm" />
-                            <span className="text-xs font-medium text-[#E8E8E8]">{comment.userName}</span>
-                            <span className="text-[10px] text-[#666]">{formatDateTime(comment.createdAt)}</span>
+
+                  {showComments && (
+                    <div className="bg-[#1F1F1F] border border-[#505050] rounded-lg p-2 space-y-2">
+                      {/* Список комментариев с фиксированной высотой */}
+                      <div className="max-h-[180px] overflow-y-auto space-y-2">
+                        {formData.comments && formData.comments.length > 0 ? (
+                          formData.comments.map((comment) => (
+                            <div key={comment.id} className="bg-[#2F2F2F] p-2 rounded">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Avatar name={comment.userName} size="sm" />
+                                <span className="text-xs font-medium text-[#E8E8E8]">{comment.userName}</span>
+                                <span className="text-[10px] text-[#666]">{formatDateTime(comment.createdAt)}</span>
+                              </div>
+                              <p className="text-xs text-[#B8B8B8] whitespace-pre-wrap break-words ml-6">{comment.text}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-4 text-[#666] text-xs">
+                            Комментариев пока нет
                           </div>
-                          <p className="text-xs text-[#B8B8B8] whitespace-pre-wrap break-words ml-6">{comment.text}</p>
-                        </div>
-                      ))}
-                      <div ref={commentsEndRef} />
+                        )}
+                        <div ref={commentsEndRef} />
+                      </div>
+
+                      {/* Форма добавления комментария */}
+                      <div className="flex gap-2 items-end pt-2 border-t border-[#404040]">
+                        <textarea
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="Написать комментарий..."
+                          className="flex-1 bg-[#2F2F2F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                          rows="2"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleAddComment(editingTaskId);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddComment(editingTaskId)}
+                          disabled={!commentText.trim()}
+                          className="p-2.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Отправить (Enter)"
+                        >
+                          <Send className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1483,36 +1517,6 @@ function App() {
               </div>
               )}
             </form>
-
-            {/* Форма добавления комментария - всегда прикреплена внизу */}
-            {editingTask && (
-              <div className="border-t border-[#404040] bg-[#2F2F2F] p-4">
-                <div className="flex gap-2 items-end">
-                  <textarea
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Написать комментарий..."
-                    className="flex-1 bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
-                    rows="2"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleAddComment(editingTaskId);
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleAddComment(editingTaskId)}
-                    disabled={!commentText.trim()}
-                    className="p-2.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Отправить (Enter)"
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
