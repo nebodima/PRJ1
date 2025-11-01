@@ -143,11 +143,21 @@ function App() {
       if (editingTaskId) {
         const freshTask = data.find(t => t.id === editingTaskId);
         if (freshTask) {
-          setFormData(prev => ({
-            ...prev,
-            comments: freshTask.comments || [],
-            attachments: freshTask.attachments || []
-          }));
+          setFormData(prev => {
+            // Проверяем изменились ли комментарии или файлы
+            const commentsChanged = JSON.stringify(prev.comments) !== JSON.stringify(freshTask.comments);
+            const attachmentsChanged = JSON.stringify(prev.attachments) !== JSON.stringify(freshTask.attachments);
+            
+            if (commentsChanged || attachmentsChanged) {
+              console.log('Обновление комментариев/файлов в модалке');
+              return {
+                ...prev,
+                comments: [...(freshTask.comments || [])],
+                attachments: [...(freshTask.attachments || [])]
+              };
+            }
+            return prev;
+          });
         }
       }
       
