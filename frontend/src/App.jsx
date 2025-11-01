@@ -1396,7 +1396,6 @@ function App() {
                   </div>
                 </div>
               )}
-                </div>
 
                 {/* Файлы */}
                 <div>
