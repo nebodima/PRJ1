@@ -86,6 +86,13 @@ function App() {
     if (currentUser) {
       fetchTasks();
       fetchUsers();
+      
+      // Автообновление каждые 10 секунд для синхронизации между устройствами
+      const interval = setInterval(() => {
+        fetchTasks();
+      }, 10000);
+      
+      return () => clearInterval(interval);
     }
   }, [currentUser]);
 
@@ -233,11 +240,43 @@ function App() {
     }
   };
 
-  const openEditModal = (task) => {
+  const openEditModal = async (task) => {
     setEditingTask(task);
     setLocalFiles([]);
     setIsFormModified(false);
     setCommentText('');
+    setShowModal(true);
+    
+    // Перечитываем задачу с сервера для получения актуальных данных
+    try {
+      const res = await fetch('/api/tasks');
+      if (res.ok) {
+        const tasks = await res.json();
+        const freshTask = tasks.find(t => t.id === task.id);
+        if (freshTask) {
+          setFormData({
+            title: freshTask.title,
+            description: freshTask.description || '',
+            status: freshTask.status,
+            priority: freshTask.priority,
+            created_by: freshTask.created_by,
+            assigned_to: freshTask.assigned_to,
+            date: freshTask.date || new Date().toISOString().split('T')[0],
+            deadline: freshTask.deadline || '',
+            urgent: freshTask.urgent || false,
+            tags: freshTask.tags || [],
+            comments: freshTask.comments || [],
+            attachments: freshTask.attachments || [],
+            subtasks: freshTask.subtasks || []
+          });
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Ошибка загрузки актуальной задачи:', err);
+    }
+    
+    // Fallback на локальные данные если запрос не удался
     setFormData({
       title: task.title,
       description: task.description || '',
@@ -253,7 +292,6 @@ function App() {
       attachments: task.attachments || [],
       subtasks: task.subtasks || []
     });
-    setShowModal(true);
   };
 
   const openCreateModal = () => {
