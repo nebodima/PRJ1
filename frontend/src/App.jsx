@@ -38,6 +38,7 @@ function App() {
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [editingTaskId, setEditingTaskId] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -139,8 +140,8 @@ function App() {
       setTasks(data);
       
       // Если модалка открыта - обновляем formData актуальными данными
-      if (editingTask?.id) {
-        const freshTask = data.find(t => t.id === editingTask.id);
+      if (editingTaskId) {
+        const freshTask = data.find(t => t.id === editingTaskId);
         if (freshTask) {
           setFormData(prev => ({
             ...prev,
@@ -267,6 +268,7 @@ function App() {
 
   const openEditModal = async (task) => {
     setEditingTask(task);
+    setEditingTaskId(task.id);
     setLocalFiles([]);
     setIsFormModified(false);
     setCommentText('');
@@ -321,6 +323,7 @@ function App() {
 
   const openCreateModal = () => {
     setEditingTask(null);
+    setEditingTaskId(null);
     setLocalFiles([]);
     setIsFormModified(false);
     setCommentText('');
@@ -350,6 +353,7 @@ function App() {
     }
     setShowModal(false);
     setEditingTask(null);
+    setEditingTaskId(null);
     setLocalFiles([]);
     setIsFormModified(false);
     setCommentText('');
@@ -469,7 +473,7 @@ function App() {
       const newComment = await res.json();
       
       // Обновляем formData если модалка открыта
-      if (editingTask?.id === taskId) {
+      if (editingTaskId === taskId) {
         setFormData(prev => ({
           ...prev,
           comments: [...(prev.comments || []), newComment]
@@ -1135,7 +1139,7 @@ function App() {
             }
           }}
         >
-          <div className="bg-[#2F2F2F] rounded-xl w-full max-w-4xl max-h-[95vh] overflow-y-auto border border-[#404040] shadow-2xl">
+          <div className="bg-[#2F2F2F] rounded-xl w-full max-w-md md:max-w-4xl max-h-[95vh] overflow-y-auto overflow-x-hidden border border-[#404040] shadow-2xl touch-pan-y">
             <div className="bg-[#3A3A3A] text-[#E8E8E8] px-4 py-3 rounded-t-xl flex justify-between items-center sticky top-0 border-b border-[#404040]">
               <h2 className="text-sm font-semibold">
                 {editingTask ? 'Редактировать задачу' : 'Новая задача'}
@@ -1148,10 +1152,10 @@ function App() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-3">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="p-3 overflow-x-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Левая колонка - основные данные */}
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
               <div>
                 <input
                   type="text"
@@ -1257,20 +1261,20 @@ function App() {
                 </div>
 
                 {/* Правая колонка - файлы и комментарии */}
-                <div className="space-y-3">
+                <div className="space-y-3 min-w-0">
               <div>
                 <label className="block text-[10px] font-medium text-[#B8B8B8] mb-1">
                   Файлы
                 </label>
                 <FileUpload
-                  taskId={editingTask?.id}
+                  taskId={editingTaskId}
                   attachments={formData.attachments}
                   onUpdate={async () => {
                     await fetchTasks();
                     // Обновляем formData с актуальными файлами после удаления
-                    if (editingTask?.id) {
+                    if (editingTaskId) {
                       const updatedTasks = await fetch('/api/tasks').then(r => r.json());
-                      const updatedTask = updatedTasks.find(t => t.id === editingTask.id);
+                      const updatedTask = updatedTasks.find(t => t.id === editingTaskId);
                       if (updatedTask) {
                         setFormData(prev => ({
                           ...prev,
@@ -1320,7 +1324,7 @@ function App() {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                             e.preventDefault();
-                            handleAddComment(editingTask.id);
+                            handleAddComment(editingTaskId);
                           }
                         }}
                       />
@@ -1328,7 +1332,7 @@ function App() {
                         <span className="text-[9px] text-[#666]">Ctrl+Enter</span>
                         <button
                           type="button"
-                          onClick={() => handleAddComment(editingTask.id)}
+                          onClick={() => handleAddComment(editingTaskId)}
                           disabled={!commentText.trim()}
                           className="px-2 py-1 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded text-[10px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
