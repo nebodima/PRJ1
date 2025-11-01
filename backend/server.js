@@ -14,7 +14,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Создаем папку для uploads если её нет
-const uploadsDir = path.join(__dirname, 'uploads');
+// Для Railway Volume используем /data, для локальной разработки - текущую папку
+const uploadsDir = process.env.RAILWAY_ENVIRONMENT 
+  ? '/data/uploads' 
+  : path.join(__dirname, 'uploads');
+
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }

@@ -12,7 +12,7 @@
   "volumes": [
     {
       "name": "helpdesk-data",
-      "mountPath": "/app/backend"
+      "mountPath": "/data"
     }
   ]
 }

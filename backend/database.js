@@ -4,7 +4,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, 'helpdesk.db');
+// Для Railway Volume используем /data, для локальной разработки - текущую папку
+const DB_PATH = process.env.RAILWAY_ENVIRONMENT 
+  ? '/data/helpdesk.db' 
+  : path.join(__dirname, 'helpdesk.db');
 
 let db = null;
 

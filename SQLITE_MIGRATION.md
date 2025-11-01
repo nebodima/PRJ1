@@ -28,25 +28,36 @@
 
 ## Railway деплой
 
+### ⚠️ ВАЖНО! Настройте Volume ПЕРЕД деплоем:
+
 ### 1. В Railway Dashboard:
 
 1. Откройте ваш проект
 2. Перейдите в **Settings** → **Volumes**
 3. Нажмите **+ New Volume**:
+   - **Mount Path**: `/data`
    - **Name**: `helpdesk-data`
-   - **Mount Path**: `/app/backend`
-4. Сохраните и редеплойте
+4. **Deploy** → редеплойте проект
 
-### 2. Или через railway.json (уже добавлено):
+### 2. Автоматическая настройка через railway.json:
 
 ```json
 "volumes": [
   {
     "name": "helpdesk-data",
-    "mountPath": "/app/backend"
+    "mountPath": "/data"
   }
 ]
 ```
+
+Railway автоматически создаст Volume при деплое.
+
+### Что хранится в Volume `/data`:
+
+- `/data/helpdesk.db` - SQLite база данных
+- `/data/uploads/` - загруженные файлы
+
+**БЕЗ Volume все данные будут стираться при каждом редеплое!**
 
 ## Локальная разработка
 
