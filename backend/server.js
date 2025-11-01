@@ -42,10 +42,10 @@ app.use(express.json());
 const frontendPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendPath));
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   try {
     const { login, password } = req.body;
-    const user = authenticateUser(login, password);
+    const user = await authenticateUser(login, password);
 
     if (user) {
       res.json({ success: true, user });
@@ -57,18 +57,18 @@ app.post('/api/login', (req, res) => {
   }
 });
 
-app.get('/api/users', (req, res) => {
+app.get('/api/users', async (req, res) => {
   try {
-    const users = getUsers();
+    const users = await getUsers();
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.get('/api/tasks', (req, res) => {
+app.get('/api/tasks', async (req, res) => {
   try {
-    const tasks = getTasks();
+    const tasks = await getTasks();
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -77,8 +77,8 @@ app.get('/api/tasks', (req, res) => {
 
 app.post('/api/tasks', async (req, res) => {
   try {
-    const taskId = createTask(req.body);
-    const tasks = getTasks();
+    const taskId = await createTask(req.body);
+    const tasks = await getTasks();
     const newTask = tasks.find(t => t.id === taskId);
     
     // Отправляем push-уведомление
@@ -101,10 +101,10 @@ app.post('/api/tasks', async (req, res) => {
   }
 });
 
-app.put('/api/tasks/:id', (req, res) => {
+app.put('/api/tasks/:id', async (req, res) => {
   try {
-    updateTask(req.params.id, req.body);
-    const tasks = getTasks();
+    await updateTask(req.params.id, req.body);
+    const tasks = await getTasks();
     const updatedTask = tasks.find(t => t.id === parseInt(req.params.id));
     res.json(updatedTask);
   } catch (error) {
@@ -112,10 +112,10 @@ app.put('/api/tasks/:id', (req, res) => {
   }
 });
 
-app.delete('/api/tasks/:id', (req, res) => {
+app.delete('/api/tasks/:id', async (req, res) => {
   try {
     // Получаем задачу перед удалением для доступа к файлам
-    const task = getTaskById(req.params.id);
+    const task = await getTaskById(req.params.id);
 
     if (task && task.attachments && task.attachments.length > 0) {
       // Удаляем все физические файлы задачи
@@ -133,7 +133,7 @@ app.delete('/api/tasks/:id', (req, res) => {
     }
 
     // Удаляем задачу из базы данных
-    deleteTask(req.params.id);
+    await deleteTask(req.params.id);
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -141,7 +141,7 @@ app.delete('/api/tasks/:id', (req, res) => {
 });
 
 // Загрузка файла к задаче
-app.post('/api/tasks/:id/attachments', upload.single('file'), (req, res) => {
+app.post('/api/tasks/:id/attachments', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Файл не загружен' });
@@ -155,7 +155,7 @@ app.post('/api/tasks/:id/attachments', upload.single('file'), (req, res) => {
       uploadDate: new Date().toISOString()
     };
 
-    const result = addAttachment(req.params.id, attachment);
+    const result = await addAttachment(req.params.id, attachment);
     if (!result) {
       // Удаляем файл если задача не найдена
       fs.unlinkSync(req.file.path);
@@ -169,9 +169,9 @@ app.post('/api/tasks/:id/attachments', upload.single('file'), (req, res) => {
 });
 
 // Удаление файла из задачи
-app.delete('/api/tasks/:taskId/attachments/:attachmentId', (req, res) => {
+app.delete('/api/tasks/:taskId/attachments/:attachmentId', async (req, res) => {
   try {
-    const task = getTaskById(req.params.taskId);
+    const task = await getTaskById(req.params.taskId);
     if (!task) {
       return res.status(404).json({ error: 'Задача не найдена' });
     }
@@ -187,7 +187,7 @@ app.delete('/api/tasks/:taskId/attachments/:attachmentId', (req, res) => {
       fs.unlinkSync(filePath);
     }
 
-    deleteAttachment(req.params.taskId, req.params.attachmentId);
+    await deleteAttachment(req.params.taskId, req.params.attachmentId);
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -263,7 +263,7 @@ app.post('/api/tasks/:id/comments', async (req, res) => {
       return res.status(400).json({ error: 'Отсутствуют обязательные поля' });
     }
 
-    const user = getUserById(userId);
+    const user = await getUserById(userId);
     if (!user) {
       return res.status(404).json({ error: 'Пользователь не найден' });
     }
@@ -276,14 +276,14 @@ app.post('/api/tasks/:id/comments', async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    const result = addComment(req.params.id, comment);
+    const result = await addComment(req.params.id, comment);
     if (!result) {
       return res.status(404).json({ error: 'Задача не найдена' });
     }
 
     // Отправляем push-уведомление
     try {
-      const task = getTaskById(req.params.id);
+      const task = await getTaskById(req.params.id);
       await sendNotificationToAll({
         title: '💬 Новый комментарий',
         body: `${user.name}: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
@@ -296,7 +296,7 @@ app.post('/api/tasks/:id/comments', async (req, res) => {
       console.error('Push notification failed:', pushError);
     }
 
-    res.status(201).json(comment);
+    res.status(201).json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
