@@ -51,7 +51,6 @@ function App() {
   const [commentsPopover, setCommentsPopover] = useState(null); // taskId для показа popover комментариев
   const [commentText, setCommentText] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
-  const commentsEndRef = useRef(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
   const [showComments, setShowComments] = useState(true);
@@ -517,10 +516,6 @@ function App() {
           comments: [...(prev.comments || []), newComment]
         }));
         
-        // Скроллим вниз к новому комментарию
-        setTimeout(() => {
-          commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
       }
 
       setCommentText('');
@@ -530,15 +525,6 @@ function App() {
       console.error('Comment error:', err);
     }
   };
-
-  // Автоскролл при изменении комментариев
-  useEffect(() => {
-    if (formData.comments && formData.comments.length > 0) {
-      setTimeout(() => {
-        commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }
-  }, [formData.comments]);
 
   // Фильтрация по статусу и поиску
   const filteredTasks = useMemo(() => tasks
@@ -1476,9 +1462,9 @@ function App() {
                   {showComments && (
                     <>
                       {/* Список комментариев - растягивается на всю доступную высоту */}
-                      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2 min-h-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
+                      <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col-reverse gap-2 min-h-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
                         {formData.comments && formData.comments.length > 0 ? (
-                          formData.comments.map((comment) => (
+                          formData.comments.slice().reverse().map((comment) => (
                             <div key={comment.id} className="bg-[#1F1F1F] p-2 rounded">
                               <div className="flex items-center gap-2 mb-1">
                                 <Avatar name={comment.userName} size="sm" />
@@ -1493,7 +1479,6 @@ function App() {
                             Комментариев пока нет
                           </div>
                         )}
-                        <div ref={commentsEndRef} />
                       </div>
 
                       {/* Форма добавления комментария - всегда внизу */}
