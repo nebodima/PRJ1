@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { AlertCircle, MessageCircle, Paperclip, CheckSquare, Edit2, X, Search, LogOut, Download } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { AlertCircle, MessageCircle, Paperclip, CheckSquare, Edit2, X, Search, LogOut, Download, Send } from 'lucide-react';
 import Login from './Login';
 import Avatar from './components/Avatar';
 import EmptyState from './components/EmptyState';
@@ -51,6 +51,7 @@ function App() {
   const [commentsPopover, setCommentsPopover] = useState(null); // taskId для показа popover комментариев
   const [commentText, setCommentText] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
+  const commentsEndRef = useRef(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -107,7 +108,7 @@ function App() {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     }
-  }, [currentUser]);
+  }, [currentUser, showModal, editingTaskId]);
 
   // Обработка сообщений от Service Worker (клик по уведомлению)
   useEffect(() => {
@@ -139,25 +140,15 @@ function App() {
       const data = await res.json();
       setTasks(data);
       
-      // Если модалка открыта - обновляем formData актуальными данными
-      if (editingTaskId) {
+      // Если модалка открыта - ВСЕГДА обновляем комментарии и файлы
+      if (editingTaskId && showModal) {
         const freshTask = data.find(t => t.id === editingTaskId);
         if (freshTask) {
-          setFormData(prev => {
-            // Проверяем изменились ли комментарии или файлы
-            const commentsChanged = JSON.stringify(prev.comments) !== JSON.stringify(freshTask.comments);
-            const attachmentsChanged = JSON.stringify(prev.attachments) !== JSON.stringify(freshTask.attachments);
-            
-            if (commentsChanged || attachmentsChanged) {
-              console.log('Обновление комментариев/файлов в модалке');
-              return {
-                ...prev,
-                comments: [...(freshTask.comments || [])],
-                attachments: [...(freshTask.attachments || [])]
-              };
-            }
-            return prev;
-          });
+          setFormData(prev => ({
+            ...prev,
+            comments: freshTask.comments || [],
+            attachments: freshTask.attachments || []
+          }));
         }
       }
       
@@ -488,6 +479,11 @@ function App() {
           ...prev,
           comments: [...(prev.comments || []), newComment]
         }));
+        
+        // Скроллим вниз к новому комментарию
+        setTimeout(() => {
+          commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
       }
 
       setCommentText('');
@@ -497,6 +493,15 @@ function App() {
       console.error('Comment error:', err);
     }
   };
+
+  // Автоскролл при изменении комментариев
+  useEffect(() => {
+    if (formData.comments && formData.comments.length > 0) {
+      setTimeout(() => {
+        commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [formData.comments]);
 
   // Фильтрация по статусу и поиску
   const filteredTasks = tasks
@@ -1307,7 +1312,7 @@ function App() {
                   
                   {/* Список комментариев */}
                   {formData.comments && formData.comments.length > 0 && (
-                    <div className="space-y-2 max-h-48 overflow-y-auto bg-[#1F1F1F] border border-[#505050] rounded-lg p-2">
+                    <div className="space-y-2 max-h-48 overflow-y-auto bg-[#1F1F1F] border border-[#505050] rounded-lg p-2 mb-2">
                       {formData.comments.map((comment) => (
                         <div key={comment.id} className="bg-[#2F2F2F] p-2 rounded">
                           <div className="flex items-center gap-2 mb-1">
@@ -1318,38 +1323,34 @@ function App() {
                           <p className="text-xs text-[#B8B8B8] whitespace-pre-wrap break-words ml-6">{comment.text}</p>
                         </div>
                       ))}
+                      <div ref={commentsEndRef} />
                     </div>
                   )}
 
                   {/* Форма добавления */}
-                  <div className="flex gap-2">
-                    <Avatar name={currentUser.name} size="sm" />
-                    <div className="flex-1">
-                      <textarea
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Написать комментарий..."
-                        className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
-                        rows="2"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                            e.preventDefault();
-                            handleAddComment(editingTaskId);
-                          }
-                        }}
-                      />
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-[9px] text-[#666]">Ctrl+Enter</span>
-                        <button
-                          type="button"
-                          onClick={() => handleAddComment(editingTaskId)}
-                          disabled={!commentText.trim()}
-                          className="px-2 py-1 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded text-[10px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Добавить
-                        </button>
-                      </div>
-                    </div>
+                  <div className="flex gap-2 items-end">
+                    <textarea
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Написать комментарий..."
+                      className="flex-1 bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-xs text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                      rows="2"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                          e.preventDefault();
+                          handleAddComment(editingTaskId);
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddComment(editingTaskId)}
+                      disabled={!commentText.trim()}
+                      className="p-2 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Отправить (Enter)"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               )}
