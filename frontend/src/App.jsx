@@ -1194,7 +1194,7 @@ function App() {
             }
           }}
         >
-          <div className="bg-[#2F2F2F] sm:rounded-xl w-full sm:max-w-3xl h-full sm:h-[95vh] flex flex-col border border-[#404040] shadow-2xl">
+          <div className="bg-[#2F2F2F] sm:rounded-xl w-full sm:max-w-xl h-full sm:h-[95vh] flex flex-col border border-[#404040] shadow-2xl">
             <div className="bg-[#3A3A3A] text-[#E8E8E8] px-4 py-3 sm:rounded-t-xl flex justify-between items-center sticky top-0 border-b border-[#404040] z-10">
               <h2 className="text-sm font-semibold">
                 {editingTask ? `Задача #${editingTask.id}` : 'Новая задача'}
@@ -1431,71 +1431,6 @@ function App() {
                   />
                 )}
               </div>
-
-              {/* Комментарии - только для существующих задач */}
-              {editingTask && (
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setShowComments(!showComments)}
-                    className="w-full flex items-center justify-between text-[10px] font-medium text-[#B8B8B8] mb-1 hover:text-[#E8E8E8] transition-colors"
-                  >
-                    <span>Комментарии ({formData.comments ? formData.comments.length : 0})</span>
-                    <X className={`w-3 h-3 transition-transform ${showComments ? 'rotate-0' : 'rotate-45'}`} />
-                  </button>
-
-                  {showComments && (
-                    <div className="bg-[#1F1F1F] border border-[#505050] rounded-lg p-2 space-y-2">
-                      {/* Список комментариев с фиксированной высотой */}
-                      <div className="max-h-[180px] overflow-y-auto space-y-2">
-                        {formData.comments && formData.comments.length > 0 ? (
-                          formData.comments.map((comment) => (
-                            <div key={comment.id} className="bg-[#2F2F2F] p-2 rounded">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Avatar name={comment.userName} size="sm" />
-                                <span className="text-xs font-medium text-[#E8E8E8]">{comment.userName}</span>
-                                <span className="text-[10px] text-[#666]">{formatDateTime(comment.createdAt)}</span>
-                              </div>
-                              <p className="text-xs text-[#B8B8B8] whitespace-pre-wrap break-words ml-6">{comment.text}</p>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-center py-4 text-[#666] text-xs">
-                            Комментариев пока нет
-                          </div>
-                        )}
-                        <div ref={commentsEndRef} />
-                      </div>
-
-                      {/* Форма добавления комментария */}
-                      <div className="flex gap-2 items-end pt-2 border-t border-[#404040]">
-                        <textarea
-                          value={commentText}
-                          onChange={(e) => setCommentText(e.target.value)}
-                          placeholder="Написать комментарий..."
-                          className="flex-1 bg-[#2F2F2F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
-                          rows="2"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleAddComment(editingTaskId);
-                            }
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleAddComment(editingTaskId)}
-                          disabled={!commentText.trim()}
-                          className="p-2.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Отправить (Enter)"
-                        >
-                          <Send className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
               </div>
 
               {/* Кнопки действий */}
@@ -1517,6 +1452,71 @@ function App() {
               </div>
               )}
             </form>
+
+            {/* Комментарии - прикреплены к низу модалки */}
+            {editingTask && (
+              <div className="border-t border-[#404040] bg-[#2F2F2F]">
+                <button
+                  type="button"
+                  onClick={() => setShowComments(!showComments)}
+                  className="w-full flex items-center justify-between text-[10px] font-medium text-[#B8B8B8] px-4 py-2 hover:text-[#E8E8E8] transition-colors"
+                >
+                  <span>Комментарии ({formData.comments ? formData.comments.length : 0})</span>
+                  <X className={`w-3 h-3 transition-transform ${showComments ? 'rotate-0' : 'rotate-45'}`} />
+                </button>
+
+                {showComments && (
+                  <div className="border-t border-[#404040] px-4 pb-4 space-y-2">
+                    {/* Список комментариев с фиксированной высотой */}
+                    <div className="max-h-[180px] overflow-y-auto space-y-2 pt-2">
+                      {formData.comments && formData.comments.length > 0 ? (
+                        formData.comments.map((comment) => (
+                          <div key={comment.id} className="bg-[#1F1F1F] p-2 rounded">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Avatar name={comment.userName} size="sm" />
+                              <span className="text-xs font-medium text-[#E8E8E8]">{comment.userName}</span>
+                              <span className="text-[10px] text-[#666]">{formatDateTime(comment.createdAt)}</span>
+                            </div>
+                            <p className="text-xs text-[#B8B8B8] whitespace-pre-wrap break-words ml-6">{comment.text}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4 text-[#666] text-xs">
+                          Комментариев пока нет
+                        </div>
+                      )}
+                      <div ref={commentsEndRef} />
+                    </div>
+
+                    {/* Форма добавления комментария */}
+                    <div className="flex gap-2 items-end pt-2">
+                      <textarea
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Написать комментарий..."
+                        className="flex-1 bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                        rows="2"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAddComment(editingTaskId);
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddComment(editingTaskId)}
+                        disabled={!commentText.trim()}
+                        className="p-2.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Отправить (Enter)"
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
