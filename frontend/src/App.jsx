@@ -1476,7 +1476,7 @@ function App() {
                   {showComments && (
                     <>
                       {/* Список комментариев - растягивается на всю доступную высоту */}
-                      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2 min-h-0">
+                      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2 min-h-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
                         {formData.comments && formData.comments.length > 0 ? (
                           formData.comments.map((comment) => (
                             <div key={comment.id} className="bg-[#1F1F1F] p-2 rounded">
