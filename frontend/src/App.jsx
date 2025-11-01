@@ -1262,12 +1262,14 @@ function App() {
                       type="date"
                       value={formData.date}
                       onChange={e => updateFormData({ date: e.target.value })}
+                      onKeyDown={e => e.preventDefault()}
                       className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
                     />
                     <input
                       type="date"
                       value={formData.deadline}
                       onChange={e => updateFormData({ deadline: e.target.value })}
+                      onKeyDown={e => e.preventDefault()}
                       placeholder="Дедлайн"
                       className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
                     />
