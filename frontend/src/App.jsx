@@ -92,7 +92,19 @@ function App() {
         fetchTasks();
       }, 10000);
       
-      return () => clearInterval(interval);
+      // Обновление при возврате на страницу (для мобильных)
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          fetchTasks();
+        }
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
   }, [currentUser]);
 
