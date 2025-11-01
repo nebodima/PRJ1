@@ -1194,7 +1194,7 @@ function App() {
             }
           }}
         >
-          <div className="bg-[#2F2F2F] rounded-xl w-full h-full md:h-[95vh] overflow-y-auto overflow-x-hidden border border-[#404040] shadow-2xl touch-pan-y">
+          <div className="bg-[#2F2F2F] rounded-xl w-full max-w-3xl h-[95vh] flex flex-col border border-[#404040] shadow-2xl">
             <div className="bg-[#3A3A3A] text-[#E8E8E8] px-4 py-3 rounded-t-xl flex justify-between items-center sticky top-0 border-b border-[#404040] z-10">
               <h2 className="text-sm font-semibold">
                 {editingTask ? `Задача #${editingTask.id}` : 'Новая задача'}
@@ -1219,10 +1219,10 @@ function App() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 overflow-x-hidden">
-              <div className="space-y-4">
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {/* Основные данные */}
-                <div className="space-y-3 min-w-0">
+                <div className="space-y-3">
                   {!editingTask || isEditMode ? (
                     <input
                       type="text"
@@ -1398,8 +1398,8 @@ function App() {
               )}
                 </div>
 
-                {/* Файлы и комментарии */}
-                <div className="space-y-4 min-w-0">
+                {/* Файлы */}
+                <div>
                 <button
                   type="button"
                   onClick={() => setShowFiles(!showFiles)}
@@ -1431,24 +1431,21 @@ function App() {
                 />
                 )}
 
-              {/* Комментарии - только для существующих задач */}
+              {/* Комментарии список - только для существующих задач */}
               {editingTask && (
-                <div className="mt-3">
+                <div>
                   <button
                     type="button"
                     onClick={() => setShowComments(!showComments)}
-                    className="w-full flex items-center justify-between text-[10px] font-medium text-[#B8B8B8] mb-1 hover:text-[#E8E8E8] transition-colors"
+                    className="w-full flex items-center justify-between text-sm font-medium text-[#E8E8E8] mb-2 hover:text-[#C48B64] transition-colors"
                   >
-                    <span>Комментарии ({formData.comments ? formData.comments.length : 0})</span>
-                    <X className={`w-3 h-3 transition-transform ${showComments ? 'rotate-0' : 'rotate-45'}`} />
+                    <span>💬 Комментарии ({formData.comments ? formData.comments.length : 0})</span>
+                    <X className={`w-4 h-4 transition-transform ${showComments ? 'rotate-0' : 'rotate-45'}`} />
                   </button>
                   
-                  {showComments && (
-                  <>
-                  
                   {/* Список комментариев */}
-                  {formData.comments && formData.comments.length > 0 && (
-                    <div className="space-y-2 max-h-48 overflow-y-auto bg-[#1F1F1F] border border-[#505050] rounded-lg p-2 mb-2">
+                  {showComments && formData.comments && formData.comments.length > 0 && (
+                    <div className="space-y-2 bg-[#1F1F1F] border border-[#505050] rounded-lg p-2">
                       {formData.comments.map((comment) => (
                         <div key={comment.id} className="bg-[#2F2F2F] p-2 rounded">
                           <div className="flex items-center gap-2 mb-1">
@@ -1462,17 +1459,22 @@ function App() {
                       <div ref={commentsEndRef} />
                     </div>
                   )}
+                </div>
+              )}
+              </div>
 
-                  {/* Форма добавления */}
+              {/* Форма добавления комментария - sticky внизу */}
+              {editingTask && showComments && (
+                <div className="border-t border-[#404040] bg-[#2F2F2F] p-4">
                   <div className="flex gap-2 items-end">
                     <textarea
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       placeholder="Написать комментарий..."
-                      className="flex-1 bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-xs text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                      className="flex-1 bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
                       rows="2"
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                        if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
                           handleAddComment(editingTaskId);
                         }
@@ -1482,21 +1484,18 @@ function App() {
                       type="button"
                       onClick={() => handleAddComment(editingTaskId)}
                       disabled={!commentText.trim()}
-                      className="p-2 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Отправить (Enter)"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="w-5 h-5" />
                     </button>
                   </div>
-                  </>
-                  )}
                 </div>
               )}
-                </div>
-              </div>
 
+              {/* Кнопки действий */}
               {isEditMode && (
-              <div className="flex gap-3 pt-3 mt-3 border-t border-[#404040] sticky bottom-0 bg-[#2F2F2F] -mx-4 px-4 pb-4 rounded-b-xl z-10">
+              <div className="flex gap-3 p-4 border-t border-[#404040] bg-[#2F2F2F]">
                 <button
                   type="button"
                   onClick={closeModal}
