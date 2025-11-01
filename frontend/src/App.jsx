@@ -1219,8 +1219,8 @@ function App() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <form onSubmit={handleSubmit} className="overflow-y-auto p-4 space-y-4 flex-shrink-0">
                 {/* Основные данные */}
                 <div className="space-y-3">
                   {!editingTask || isEditMode ? (
@@ -1431,92 +1431,92 @@ function App() {
                   />
                 )}
               </div>
-              </div>
 
-              {/* Кнопки действий */}
-              {isEditMode && (
-              <div className="flex gap-3 p-4 border-t border-[#404040] bg-[#2F2F2F]">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 px-3 py-1.5 border border-[#505050] rounded-lg text-sm text-[#B8B8B8] hover:bg-[#3A3A3A] hover:text-[#E8E8E8] transition-all"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-3 py-1.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg text-sm font-medium transition-all hover:shadow-lg"
-                >
-                  {editingTask ? 'Сохранить' : 'Создать'}
-                </button>
-              </div>
-              )}
-            </form>
-
-            {/* Комментарии - прикреплены к низу модалки */}
-            {editingTask && (
-              <div className="border-t border-[#404040] bg-[#2F2F2F]">
-                <button
-                  type="button"
-                  onClick={() => setShowComments(!showComments)}
-                  className="w-full flex items-center justify-between text-[10px] font-medium text-[#B8B8B8] px-4 py-2 hover:text-[#E8E8E8] transition-colors"
-                >
-                  <span>Комментарии ({formData.comments ? formData.comments.length : 0})</span>
-                  <X className={`w-3 h-3 transition-transform ${showComments ? 'rotate-0' : 'rotate-45'}`} />
-                </button>
-
-                {showComments && (
-                  <div className="border-t border-[#404040] px-4 pb-4 space-y-2">
-                    {/* Список комментариев с фиксированной высотой */}
-                    <div className="max-h-[180px] overflow-y-auto space-y-2 pt-2">
-                      {formData.comments && formData.comments.length > 0 ? (
-                        formData.comments.map((comment) => (
-                          <div key={comment.id} className="bg-[#1F1F1F] p-2 rounded">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Avatar name={comment.userName} size="sm" />
-                              <span className="text-xs font-medium text-[#E8E8E8]">{comment.userName}</span>
-                              <span className="text-[10px] text-[#666]">{formatDateTime(comment.createdAt)}</span>
-                            </div>
-                            <p className="text-xs text-[#B8B8B8] whitespace-pre-wrap break-words ml-6">{comment.text}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-4 text-[#666] text-xs">
-                          Комментариев пока нет
-                        </div>
-                      )}
-                      <div ref={commentsEndRef} />
-                    </div>
-
-                    {/* Форма добавления комментария */}
-                    <div className="flex gap-2 items-end pt-2">
-                      <textarea
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Написать комментарий..."
-                        className="flex-1 bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
-                        rows="2"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleAddComment(editingTaskId);
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleAddComment(editingTaskId)}
-                        disabled={!commentText.trim()}
-                        className="p-2.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Отправить (Enter)"
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
-                    </div>
+                {/* Кнопки действий */}
+                {isEditMode && (
+                  <div className="flex gap-3 p-4 border-t border-[#404040] bg-[#2F2F2F]">
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="flex-1 px-3 py-1.5 border border-[#505050] rounded-lg text-sm text-[#B8B8B8] hover:bg-[#3A3A3A] hover:text-[#E8E8E8] transition-all"
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-3 py-1.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg text-sm font-medium transition-all hover:shadow-lg"
+                    >
+                      {editingTask ? 'Сохранить' : 'Создать'}
+                    </button>
                   </div>
                 )}
-              </div>
-            )}
+              </form>
+
+              {/* Комментарии - автоматически растягиваются на оставшуюся высоту */}
+              {editingTask && (
+                <div className="flex-1 flex flex-col min-h-0 border-t border-[#404040] bg-[#2F2F2F]">
+                  <button
+                    type="button"
+                    onClick={() => setShowComments(!showComments)}
+                    className="w-full flex items-center justify-between text-[10px] font-medium text-[#B8B8B8] px-4 py-2 hover:text-[#E8E8E8] transition-colors flex-shrink-0"
+                  >
+                    <span>Комментарии ({formData.comments ? formData.comments.length : 0})</span>
+                    <X className={`w-3 h-3 transition-transform ${showComments ? 'rotate-0' : 'rotate-45'}`} />
+                  </button>
+
+                  {showComments && (
+                    <>
+                      {/* Список комментариев - растягивается на всю доступную высоту */}
+                      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2 min-h-0">
+                        {formData.comments && formData.comments.length > 0 ? (
+                          formData.comments.map((comment) => (
+                            <div key={comment.id} className="bg-[#1F1F1F] p-2 rounded">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Avatar name={comment.userName} size="sm" />
+                                <span className="text-xs font-medium text-[#E8E8E8]">{comment.userName}</span>
+                                <span className="text-[10px] text-[#666]">{formatDateTime(comment.createdAt)}</span>
+                              </div>
+                              <p className="text-xs text-[#B8B8B8] whitespace-pre-wrap break-words ml-6">{comment.text}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-4 text-[#666] text-xs">
+                            Комментариев пока нет
+                          </div>
+                        )}
+                        <div ref={commentsEndRef} />
+                      </div>
+
+                      {/* Форма добавления комментария - всегда внизу */}
+                      <div className="flex gap-2 items-end p-4 border-t border-[#404040] flex-shrink-0">
+                        <textarea
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="Написать комментарий..."
+                          className="flex-1 bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                          rows="2"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleAddComment(editingTaskId);
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddComment(editingTaskId)}
+                          disabled={!commentText.trim()}
+                          className="p-2.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Отправить (Enter)"
+                        >
+                          <Send className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
