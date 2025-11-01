@@ -1396,10 +1396,10 @@ function App() {
                   </div>
                 </div>
               )}
-                </div>
+              </div>
 
-                {/* Файлы */}
-                <div>
+              {/* Файлы */}
+              <div>
                 <button
                   type="button"
                   onClick={() => setShowFiles(!showFiles)}
@@ -1409,28 +1409,28 @@ function App() {
                   <X className={`w-3 h-3 transition-transform ${showFiles ? 'rotate-0' : 'rotate-45'}`} />
                 </button>
                 {showFiles && (
-                <FileUpload
-                  taskId={editingTaskId}
-                  attachments={formData.attachments}
-                  onUpdate={async () => {
-                    await fetchTasks();
-                    // Обновляем formData с актуальными файлами после удаления
-                    if (editingTaskId) {
-                      const updatedTasks = await fetch('/api/tasks').then(r => r.json());
-                      const updatedTask = updatedTasks.find(t => t.id === editingTaskId);
-                      if (updatedTask) {
-                        setFormData(prev => ({
-                          ...prev,
-                          attachments: updatedTask.attachments || []
-                        }));
+                  <FileUpload
+                    taskId={editingTaskId}
+                    attachments={formData.attachments}
+                    onUpdate={async () => {
+                      await fetchTasks();
+                      // Обновляем formData с актуальными файлами после удаления
+                      if (editingTaskId) {
+                        const updatedTasks = await fetch('/api/tasks').then(r => r.json());
+                        const updatedTask = updatedTasks.find(t => t.id === editingTaskId);
+                        if (updatedTask) {
+                          setFormData(prev => ({
+                            ...prev,
+                            attachments: updatedTask.attachments || []
+                          }));
+                        }
                       }
-                    }
-                  }}
-                  localFiles={localFiles}
-                  onLocalFilesChange={setLocalFiles}
-                />
+                    }}
+                    localFiles={localFiles}
+                    onLocalFilesChange={setLocalFiles}
+                  />
                 )}
-                </div>
+              </div>
 
               {/* Комментарии список - только для существующих задач */}
               {editingTask && (
