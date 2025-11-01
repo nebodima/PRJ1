@@ -8,3 +8,5 @@ database.json.backup
 .DS_Store
 backend/uploads/
 backend/subscriptions.json
+data/
+/data
