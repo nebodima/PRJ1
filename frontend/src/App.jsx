@@ -137,6 +137,19 @@ function App() {
       if (!res.ok) throw new Error('Ошибка при загрузке задач');
       const data = await res.json();
       setTasks(data);
+      
+      // Если модалка открыта - обновляем formData актуальными данными
+      if (editingTask?.id) {
+        const freshTask = data.find(t => t.id === editingTask.id);
+        if (freshTask) {
+          setFormData(prev => ({
+            ...prev,
+            comments: freshTask.comments || [],
+            attachments: freshTask.attachments || []
+          }));
+        }
+      }
+      
       setError(null);
     } catch (err) {
       setError(err.message);
