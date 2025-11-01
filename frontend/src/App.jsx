@@ -142,7 +142,14 @@ function App() {
       const res = await fetch('/api/tasks');
       if (!res.ok) throw new Error('Ошибка при загрузке задач');
       const data = await res.json();
-      setTasks(data);
+
+      // Обновляем только если данные действительно изменились
+      setTasks(prevTasks => {
+        if (JSON.stringify(prevTasks) === JSON.stringify(data)) {
+          return prevTasks; // Возвращаем старый массив, чтобы избежать перерисовки
+        }
+        return data;
+      });
       
       // Если модалка открыта - ВСЕГДА обновляем комментарии и файлы
       if (editingTaskId && showModal) {
