@@ -1223,34 +1223,30 @@ function App() {
               <div className="space-y-4">
                 {/* Основные данные */}
                 <div className="space-y-3 min-w-0">
-              <div>
-                {!editingTask || isEditMode ? (
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={e => updateFormData({ title: e.target.value })}
-                    placeholder="Название задачи *"
-                    className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
-                  />
-                ) : (
-                  <h3 className="text-lg font-semibold text-[#E8E8E8]">{formData.title}</h3>
-                )}
-              </div>
+                  {!editingTask || isEditMode ? (
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={e => updateFormData({ title: e.target.value })}
+                      placeholder="Название задачи *"
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                    />
+                  ) : (
+                    <h3 className="text-lg font-semibold text-[#E8E8E8]">{formData.title}</h3>
+                  )}
 
-              <div>
-                {!editingTask || isEditMode ? (
-                  <textarea
-                    value={formData.description}
-                    onChange={e => updateFormData({ description: e.target.value })}
-                    placeholder="Описание"
-                    className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
-                    rows="2"
-                  />
-                ) : formData.description ? (
-                  <p className="text-sm text-[#B8B8B8]">{formData.description}</p>
-                ) : null}
-              </div>
+                  {!editingTask || isEditMode ? (
+                    <textarea
+                      value={formData.description}
+                      onChange={e => updateFormData({ description: e.target.value })}
+                      placeholder="Описание"
+                      className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                      rows="2"
+                    />
+                  ) : formData.description ? (
+                    <p className="text-sm text-[#B8B8B8]">{formData.description}</p>
+                  ) : null}
 
               {isEditMode ? (
                 <>
@@ -1404,7 +1400,6 @@ function App() {
 
                 {/* Файлы и комментарии */}
                 <div className="space-y-4 min-w-0">
-              <div>
                 <button
                   type="button"
                   onClick={() => setShowFiles(!showFiles)}
@@ -1435,11 +1430,10 @@ function App() {
                   onLocalFilesChange={setLocalFiles}
                 />
                 )}
-              </div>
 
               {/* Комментарии - только для существующих задач */}
               {editingTask && (
-                <div>
+                <div className="mt-3">
                   <button
                     type="button"
                     onClick={() => setShowComments(!showComments)}
@@ -1498,10 +1492,11 @@ function App() {
                   )}
                 </div>
               )}
+                </div>
               </div>
 
               {isEditMode && (
-              <div className="flex gap-3 pt-3 mt-3 border-t border-[#404040] sticky bottom-0 bg-[#2F2F2F] -mx-3 px-3 pb-3 rounded-b-xl z-10">
+              <div className="flex gap-3 pt-3 mt-3 border-t border-[#404040] sticky bottom-0 bg-[#2F2F2F] -mx-4 px-4 pb-4 rounded-b-xl z-10">
                 <button
                   type="button"
                   onClick={closeModal}
