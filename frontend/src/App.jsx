@@ -1396,6 +1396,7 @@ function App() {
                   </div>
                 </div>
               )}
+                </div>
 
                 {/* Файлы */}
                 <div>
@@ -1429,6 +1430,7 @@ function App() {
                   onLocalFilesChange={setLocalFiles}
                 />
                 )}
+                </div>
 
               {/* Комментарии список - только для существующих задач */}
               {editingTask && (
@@ -1462,36 +1464,6 @@ function App() {
               )}
               </div>
 
-              {/* Форма добавления комментария - всегда прикреплена внизу */}
-              {editingTask && (
-                <div className="border-t border-[#404040] bg-[#2F2F2F] p-4">
-                  <div className="flex gap-2 items-end">
-                    <textarea
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Написать комментарий..."
-                      className="flex-1 bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
-                      rows="2"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleAddComment(editingTaskId);
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleAddComment(editingTaskId)}
-                      disabled={!commentText.trim()}
-                      className="p-2.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Отправить (Enter)"
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* Кнопки действий */}
               {isEditMode && (
               <div className="flex gap-3 p-4 border-t border-[#404040] bg-[#2F2F2F]">
@@ -1511,6 +1483,36 @@ function App() {
               </div>
               )}
             </form>
+
+            {/* Форма добавления комментария - всегда прикреплена внизу */}
+            {editingTask && (
+              <div className="border-t border-[#404040] bg-[#2F2F2F] p-4">
+                <div className="flex gap-2 items-end">
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Написать комментарий..."
+                    className="flex-1 bg-[#1F1F1F] border border-[#505050] rounded-lg px-3 py-2 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                    rows="2"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAddComment(editingTaskId);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddComment(editingTaskId)}
+                    disabled={!commentText.trim()}
+                    className="p-2.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Отправить (Enter)"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
