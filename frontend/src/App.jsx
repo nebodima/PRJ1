@@ -52,6 +52,9 @@ function App() {
   const [commentText, setCommentText] = useState('');
   const [previewImage, setPreviewImage] = useState(null);
   const commentsEndRef = useRef(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showFiles, setShowFiles] = useState(false);
+  const [showComments, setShowComments] = useState(true);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -228,26 +231,36 @@ function App() {
         }
       }
 
-      setShowModal(false);
-      setEditingTask(null);
-      setLocalFiles([]);
-      setIsFormModified(false);
-      setFormData({
-        title: '',
-        description: '',
-        status: 'open',
-        priority: 'medium',
-        created_by: 1,
-        assigned_to: null,
-        date: new Date().toISOString().split('T')[0],
-        deadline: '',
-        urgent: false,
-        tags: [],
-        comments: [],
-        attachments: [],
-        subtasks: []
-      });
-      await fetchTasks();
+      // Если редактировали - переключаем в режим просмотра
+      if (method === 'PUT') {
+        setIsEditMode(false);
+        setIsFormModified(false);
+        await fetchTasks();
+      } else {
+        // Если создали - закрываем модалку
+        setShowModal(false);
+        setEditingTask(null);
+        setEditingTaskId(null);
+        setLocalFiles([]);
+        setIsFormModified(false);
+        setIsEditMode(false);
+        setFormData({
+          title: '',
+          description: '',
+          status: 'open',
+          priority: 'medium',
+          created_by: 1,
+          assigned_to: null,
+          date: new Date().toISOString().split('T')[0],
+          deadline: '',
+          urgent: false,
+          tags: [],
+          comments: [],
+          attachments: [],
+          subtasks: []
+        });
+        await fetchTasks();
+      }
     } catch (err) {
       setError(err.message);
       console.error('Ошибка сохранения:', err);
@@ -273,6 +286,9 @@ function App() {
     setLocalFiles([]);
     setIsFormModified(false);
     setCommentText('');
+    setIsEditMode(false);
+    setShowFiles(false);
+    setShowComments(true);
     setShowModal(true);
     
     // Перечитываем задачу с сервера для получения актуальных данных
@@ -328,6 +344,9 @@ function App() {
     setLocalFiles([]);
     setIsFormModified(false);
     setCommentText('');
+    setIsEditMode(true);
+    setShowFiles(true);
+    setShowComments(false);
     setFormData({
       title: '',
       description: '',
@@ -357,6 +376,7 @@ function App() {
     setEditingTaskId(null);
     setLocalFiles([]);
     setIsFormModified(false);
+    setIsEditMode(false);
     setCommentText('');
     setFormData({
       title: '',
@@ -1155,16 +1175,28 @@ function App() {
           }}
         >
           <div className="bg-[#2F2F2F] rounded-xl w-full max-w-md md:max-w-4xl max-h-[95vh] overflow-y-auto overflow-x-hidden border border-[#404040] shadow-2xl touch-pan-y">
-            <div className="bg-[#3A3A3A] text-[#E8E8E8] px-4 py-3 rounded-t-xl flex justify-between items-center sticky top-0 border-b border-[#404040]">
+            <div className="bg-[#3A3A3A] text-[#E8E8E8] px-4 py-3 rounded-t-xl flex justify-between items-center sticky top-0 border-b border-[#404040] z-10">
               <h2 className="text-sm font-semibold">
-                {editingTask ? 'Редактировать задачу' : 'Новая задача'}
+                {editingTask ? `Задача #${editingTask.id}` : 'Новая задача'}
               </h2>
-              <button
-                onClick={closeModal}
-                className="text-[#B8B8B8] hover:text-white text-xl leading-none transition-colors"
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-2">
+                {editingTask && !isEditMode && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditMode(true)}
+                    className="p-1.5 hover:bg-[#454545] rounded transition-colors"
+                    title="Редактировать"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={closeModal}
+                  className="text-[#B8B8B8] hover:text-white text-xl leading-none transition-colors"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="p-3 overflow-x-hidden">
@@ -1172,26 +1204,36 @@ function App() {
                 {/* Левая колонка - основные данные */}
                 <div className="space-y-2 min-w-0">
               <div>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={e => updateFormData({ title: e.target.value })}
-                  placeholder="Название задачи *"
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
-                />
+                {!editingTask || isEditMode ? (
+                  <input
+                    type="text"
+                    required
+                    value={formData.title}
+                    onChange={e => updateFormData({ title: e.target.value })}
+                    placeholder="Название задачи *"
+                    className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all"
+                  />
+                ) : (
+                  <h3 className="text-lg font-semibold text-[#E8E8E8]">{formData.title}</h3>
+                )}
               </div>
 
               <div>
-                <textarea
-                  value={formData.description}
-                  onChange={e => updateFormData({ description: e.target.value })}
-                  placeholder="Описание"
-                  className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
-                  rows="2"
-                />
+                {!editingTask || isEditMode ? (
+                  <textarea
+                    value={formData.description}
+                    onChange={e => updateFormData({ description: e.target.value })}
+                    placeholder="Описание"
+                    className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-sm text-[#E8E8E8] placeholder-[#888888] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all resize-none"
+                    rows="2"
+                  />
+                ) : formData.description ? (
+                  <p className="text-sm text-[#B8B8B8]">{formData.description}</p>
+                ) : null}
               </div>
 
+              {isEditMode ? (
+                <>
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="date"
@@ -1273,14 +1315,85 @@ function App() {
                   ))}
                 </select>
               </div>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  {/* Статусы и мета-данные компактно */}
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
+                      formData.status === 'open' ? 'bg-[#5B7C99] text-white' :
+                      formData.status === 'in_progress' ? 'bg-[#C48B64] text-white' : 'bg-[#6B8E6F] text-white'
+                    }`}>
+                      {formData.status === 'open' ? 'Открыто' : formData.status === 'in_progress' ? 'В работе' : 'Завершено'}
+                    </span>
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
+                      formData.priority === 'high' ? 'bg-[#B86B5C] text-white' :
+                      formData.priority === 'low' ? 'bg-[#6B8E6F] text-white' : 'bg-[#C48B64] text-white'
+                    }`}>
+                      {formData.priority === 'high' ? 'Высокий' : formData.priority === 'low' ? 'Низкий' : 'Средний'}
+                    </span>
+                    {formData.urgent && (
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-red-900 bg-opacity-30 text-red-400">
+                        ⚠️ Срочно
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-[#B8B8B8]">
+                      <span className="text-[#666]">Создана:</span>
+                      <span>{formatDate(formData.date)}</span>
+                    </div>
+                    {formData.deadline && (
+                      <div className="flex items-center gap-2 text-[#B8B8B8]">
+                        <span className="text-[#666]">Дедлайн:</span>
+                        <span className={new Date(formData.deadline) < new Date() ? 'text-red-400 font-semibold' : ''}>
+                          {formatDate(formData.deadline)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#666] text-sm">Автор:</span>
+                      <div className="flex items-center gap-1.5">
+                        <Avatar name={editingTask?.created_by_name} size="sm" />
+                        <span className="text-[#B8B8B8] text-sm">{editingTask?.created_by_name}</span>
+                      </div>
+                    </div>
+                    {editingTask?.assigned_to_name && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#666] text-sm">Исполнитель:</span>
+                        <div className="flex items-center gap-1.5">
+                          <Avatar name={editingTask.assigned_to_name} size="sm" />
+                          <span className="text-[#B8B8B8] text-sm">{editingTask.assigned_to_name}</span>
+                        </div>
+                      </div>
+                    )}
+                    {formData.tags && formData.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {formData.tags.map((tag, idx) => (
+                          <span key={idx} className="px-2 py-0.5 bg-[#3A3A3A] text-[#B8B8B8] rounded text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
                 </div>
 
                 {/* Правая колонка - файлы и комментарии */}
                 <div className="space-y-3 min-w-0">
               <div>
-                <label className="block text-[10px] font-medium text-[#B8B8B8] mb-1">
-                  Файлы
-                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowFiles(!showFiles)}
+                  className="w-full flex items-center justify-between text-[10px] font-medium text-[#B8B8B8] mb-1 hover:text-[#E8E8E8] transition-colors"
+                >
+                  <span>Файлы ({formData.attachments?.length || 0})</span>
+                  <X className={`w-3 h-3 transition-transform ${showFiles ? 'rotate-0' : 'rotate-45'}`} />
+                </button>
+                {showFiles && (
                 <FileUpload
                   taskId={editingTaskId}
                   attachments={formData.attachments}
@@ -1301,14 +1414,23 @@ function App() {
                   localFiles={localFiles}
                   onLocalFilesChange={setLocalFiles}
                 />
+                )}
               </div>
 
               {/* Комментарии - только для существующих задач */}
               {editingTask && (
                 <div>
-                  <label className="block text-[10px] font-medium text-[#B8B8B8] mb-1">
-                    Комментарии ({formData.comments ? formData.comments.length : 0})
-                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowComments(!showComments)}
+                    className="w-full flex items-center justify-between text-[10px] font-medium text-[#B8B8B8] mb-1 hover:text-[#E8E8E8] transition-colors"
+                  >
+                    <span>Комментарии ({formData.comments ? formData.comments.length : 0})</span>
+                    <X className={`w-3 h-3 transition-transform ${showComments ? 'rotate-0' : 'rotate-45'}`} />
+                  </button>
+                  
+                  {showComments && (
+                  <>
                   
                   {/* Список комментариев */}
                   {formData.comments && formData.comments.length > 0 && (
@@ -1352,12 +1474,15 @@ function App() {
                       <Send className="w-4 h-4" />
                     </button>
                   </div>
+                  </>
+                  )}
                 </div>
               )}
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-3 mt-3 border-t border-[#404040] sticky bottom-0 bg-[#2F2F2F] -mx-3 px-3 pb-3 rounded-b-xl">
+              {isEditMode && (
+              <div className="flex gap-3 pt-3 mt-3 border-t border-[#404040] sticky bottom-0 bg-[#2F2F2F] -mx-3 px-3 pb-3 rounded-b-xl z-10">
                 <button
                   type="button"
                   onClick={closeModal}
@@ -1372,6 +1497,7 @@ function App() {
                   {editingTask ? 'Сохранить' : 'Создать'}
                 </button>
               </div>
+              )}
             </form>
           </div>
         </div>
