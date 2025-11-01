@@ -1207,6 +1207,24 @@ function App() {
                 {editingTask ? `Задача #${editingTask.id}` : 'Новая задача'}
               </h2>
               <div className="flex items-center gap-2">
+                {isEditMode && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="px-3 py-1.5 border border-[#505050] rounded-lg text-xs text-[#B8B8B8] hover:bg-[#3A3A3A] hover:text-[#E8E8E8] transition-all"
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      type="submit"
+                      form="task-form"
+                      className="px-3 py-1.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg text-xs font-medium transition-all hover:shadow-lg"
+                    >
+                      {editingTask ? 'Сохранить' : 'Создать'}
+                    </button>
+                  </>
+                )}
                 {editingTask && !isEditMode && (
                   <button
                     type="button"
@@ -1227,7 +1245,7 @@ function App() {
             </div>
 
             <div className="flex-1 flex flex-col overflow-hidden">
-              <form onSubmit={handleSubmit} className="overflow-y-auto p-4 space-y-4 flex-shrink-0">
+              <form id="task-form" onSubmit={handleSubmit} className="overflow-y-auto p-4 space-y-4 flex-shrink-0">
                 {/* Основные данные */}
                 <div className="space-y-3">
                   {!editingTask || isEditMode ? (
@@ -1262,14 +1280,16 @@ function App() {
                       type="date"
                       value={formData.date}
                       onChange={e => updateFormData({ date: e.target.value })}
-                      onKeyDown={e => e.preventDefault()}
+                      onClick={e => e.target.showPicker?.()}
+                      readOnly
                       className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
                     />
                     <input
                       type="date"
                       value={formData.deadline}
                       onChange={e => updateFormData({ deadline: e.target.value })}
-                      onKeyDown={e => e.preventDefault()}
+                      onClick={e => e.target.showPicker?.()}
+                      readOnly
                       placeholder="Дедлайн"
                       className="w-full bg-[#1F1F1F] border border-[#505050] rounded-lg px-2.5 py-1.5 text-xs text-[#E8E8E8] focus:outline-none focus:border-[#C48B64] focus:ring-1 focus:ring-[#C48B64] transition-all cursor-pointer"
                     />
@@ -1440,25 +1460,6 @@ function App() {
                   />
                 )}
               </div>
-
-                {/* Кнопки действий */}
-                {isEditMode && (
-                  <div className="flex gap-3 p-4 border-t border-[#404040] bg-[#2F2F2F]">
-                    <button
-                      type="button"
-                      onClick={closeModal}
-                      className="flex-1 px-3 py-1.5 border border-[#505050] rounded-lg text-sm text-[#B8B8B8] hover:bg-[#3A3A3A] hover:text-[#E8E8E8] transition-all"
-                    >
-                      Отмена
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 px-3 py-1.5 bg-[#C48B64] hover:bg-[#D49A75] text-white rounded-lg text-sm font-medium transition-all hover:shadow-lg"
-                    >
-                      {editingTask ? 'Сохранить' : 'Создать'}
-                    </button>
-                  </div>
-                )}
               </form>
 
               {/* Комментарии - автоматически растягиваются на оставшуюся высоту */}
