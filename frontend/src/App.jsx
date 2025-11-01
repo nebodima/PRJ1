@@ -55,6 +55,7 @@ function App() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
   const [showComments, setShowComments] = useState(true);
+  const [serverOffline, setServerOffline] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -155,9 +156,18 @@ function App() {
         }
       }
       
-      setError(null);
+      // Сервер доступен
+      if (serverOffline) {
+        setServerOffline(false);
+        setError(null);
+      }
     } catch (err) {
-      setError(err.message);
+      // Проверяем тип ошибки - сетевая или серверная
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        setServerOffline(true);
+      } else {
+        setError(err.message);
+      }
       console.error('Ошибка загрузки задач:', err);
     }
   };
@@ -623,6 +633,16 @@ function App() {
             </button>
           </div>
         </div>
+
+        {serverOffline && (
+          <div className="bg-orange-900 bg-opacity-20 border border-orange-500 text-orange-400 px-4 py-3 m-3 rounded-lg flex items-center gap-3 animate-pulse">
+            <div className="w-3 h-3 bg-orange-400 rounded-full animate-ping"></div>
+            <div className="flex-1">
+              <div className="font-semibold">Сервер недоступен</div>
+              <div className="text-xs text-orange-300">Идет обновление или редеплой. Переподключение...</div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-900 bg-opacity-20 border border-red-500 text-red-400 px-4 py-3 m-3 rounded-lg flex justify-between items-center">
@@ -1478,7 +1498,7 @@ function App() {
                   )}
                 </div>
               )}
-                </div>
+              </div>
 
               {isEditMode && (
               <div className="flex gap-3 pt-3 mt-3 border-t border-[#404040] sticky bottom-0 bg-[#2F2F2F] -mx-3 px-3 pb-3 rounded-b-xl z-10">
